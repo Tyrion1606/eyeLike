@@ -157,11 +157,10 @@ void findEyes(cv::Mat frame_gray, cv::Rect face) {
 	  pupil_stack_count += 1;
   }
   int loop_count;
-  for(loop_count = 0; loop_count<= 3; loop_count++){  
+  for(loop_count = 0; loop_count<= 3; loop_count++){
 	  pupil_smooth_position[loop_count] = 0;
   }
-  pupil_smooth_position[0]
-  for(loop_count = 0; loop_count<= 4; loop_count++){  
+  for(loop_count = 0; loop_count<= 4; loop_count++){
 	  pupil_smooth_position[0] += pupil_position_stack[0][loop_count];
 	  pupil_smooth_position[1] += pupil_position_stack[1][loop_count];
 	  pupil_smooth_position[2] += pupil_position_stack[2][loop_count];
@@ -170,10 +169,10 @@ void findEyes(cv::Mat frame_gray, cv::Rect face) {
   printf("\e[1A");
   printf("\e[K");
   printf("Left pupil: (%.4f,%.4f), Right pupil: (%.4f,%.4f)\n",
-		pupil_smooth_position[0],
-		pupil_smooth_position[1],
-		pupil_smooth_position[2],
-		pupil_smooth_position[3]
+		pupil_smooth_position[0]/5,
+		pupil_smooth_position[1]/5,
+		pupil_smooth_position[2]/5,
+		pupil_smooth_position[3]/5
 		  );
   // change eye centers to face coordinates
   rightPupil.x += rightEyeRegion.x;
