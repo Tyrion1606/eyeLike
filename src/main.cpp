@@ -1,6 +1,7 @@
 #include <opencv2/objdetect/objdetect.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
+#include <opencv2/opencv.hpp>
 
 #include <iostream>
 #include <queue>
@@ -11,6 +12,7 @@
 #include "findEyeCenter.h"
 #include "findEyeCorner.h"
 
+using namespace cv;
 
 /** Constants **/
 
@@ -35,7 +37,7 @@ int pupil_stack_count = 0;
  * @function main
  */
 int main( int argc, const char** argv ) {
-  CvCapture* capture;
+//  CvCapture* capture;
   cv::Mat frame;
 
   // Load the cascades
@@ -53,12 +55,13 @@ int main( int argc, const char** argv ) {
   createCornerKernels();
   ellipse(skinCrCbHist, cv::Point(113, 155.6), cv::Size(23.4, 15.2),
           43.0, 0.0, 360.0, cv::Scalar(255, 255, 255), -1);
-
+  VideoCapture capture(-1);
    // Read the video stream
-  capture = cvCaptureFromCAM( 1 );
-  if( capture ) {
+  //capture = cvCaptureFromCAM( 1 );
+  if( capture.isOpened() ) {
     while( true ) {
-      frame = cvQueryFrame( capture );
+      //frame = cvQueryFrame( capture );
+	  capture.read(frame);
       // mirror it
       cv::flip(frame, frame, 1);
       frame.copyTo(debugImage);
