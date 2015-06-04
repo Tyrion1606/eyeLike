@@ -142,9 +142,14 @@ void findEyes(cv::Mat frame_gray, cv::Rect face) {
 		  );
 */
   pupil_position_stack[0][pupil_stack_count] = leftPupil.x;
-  pupil_position_stack[1][pupil_stack_count] = leftPupil.y;
   pupil_position_stack[2][pupil_stack_count] = rightPupil.x;
-  pupil_position_stack[3][pupil_stack_count] = rightPupil.y;
+  //filter out the out of range data
+  if( (float) leftPupil.y/leftEyeRegion.height >= 0.23 ||
+	  (float) leftPupil.y/leftEyeRegion.height <= 0.90	)
+		pupil_position_stack[1][pupil_stack_count] = leftPupil.y;
+  if( (float) rightPupil.y/rightEyeRegion.height >= 0.23 ||
+	  (float) rightPupil.y/rightEyeRegion.height <= 0.90)
+		pupil_position_stack[3][pupil_stack_count] = rightPupil.y;
 
   if(pupil_stack_count >= 4){
 	  pupil_stack_count = 0;
@@ -165,15 +170,15 @@ void findEyes(cv::Mat frame_gray, cv::Rect face) {
   printf("\e[1A");
   printf("\e[K");
   printf("Left pupil: (%.4f,%.4f), Right pupil: (%.4f,%.4f)\n",
-		(float) pupil_smooth_position[0]/(leftEyeRegion.width  *  5),
-		(float) pupil_smooth_position[1]/(leftEyeRegion.height *  5),
-		(float) pupil_smooth_position[2]/(rightEyeRegion.width *  5),
+		(float) pupil_smooth_position[0]/(leftEyeRegion.width   * 5),
+		(float) pupil_smooth_position[1]/(leftEyeRegion.height  * 5),
+		(float) pupil_smooth_position[2]/(rightEyeRegion.width  * 5),
 		(float) pupil_smooth_position[3]/(rightEyeRegion.height * 5)
 		  );
-   leftPupil.x  = (int) pupil_smooth_position[0]/5;
-   leftPupil.y  = (int) pupil_smooth_position[1]/5;
-   rightPupil.x = (int) pupil_smooth_position[2]/5;
-   rightPupil.y = (int) pupil_smooth_position[3]/5;
+  leftPupil.x  = (int) pupil_smooth_position[0]/5;
+  leftPupil.y  = (int) pupil_smooth_position[1]/5;
+  rightPupil.x = (int) pupil_smooth_position[2]/5;
+  rightPupil.y = (int) pupil_smooth_position[3]/5;
 
 
   // change eye centers to face coordinates
