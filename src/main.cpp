@@ -28,6 +28,9 @@ cv::RNG rng(12345);
 cv::Mat debugImage;
 cv::Mat skinCrCbHist = cv::Mat::zeros(cv::Size(256, 256), CV_8UC1);
 
+float pupil_position_stack[4][5];
+float pupil_smooth_position[4];
+int pupil_stack_count = 0;
 /**
  * @function main
  */
@@ -129,13 +132,48 @@ void findEyes(cv::Mat frame_gray, cv::Rect face) {
   rectangle(debugFace,rightLeftCornerRegion,200);
   rectangle(debugFace,rightRightCornerRegion,200);
 *///Compute the relative position
-  printf("\e[1A");
+/*  printf("\e[1A");
   printf("\e[K");
   printf("Left pupil: (%.4f,%.4f), Right pupil: (%.4f,%.4f)\n",
 		  (float) leftPupil.x/leftEyeRegion.width,
 		  (float) leftPupil.y/leftEyeRegion.height,
 		  (float) rightPupil.x/rightEyeRegion.width,
 		  (float) rightPupil.y/rightEyeRegion.height
+		  );
+*/
+  pupil_position_stack[0][pupil_stack_count] =
+		(float) leftPupil.x/leftEyeRegion.width;
+  pupil_position_stack[1][pupil_stack_count] =
+		(float) leftPupil.y/leftEyeRegion.height;
+  pupil_position_stack[2][pupil_stack_count] =
+		(float) rightPupil.x/rightEyeRegion.width;
+  pupil_position_stack[3][pupil_stack_count] =
+		(float) rightPupil.y/rightEyeRegion.height;
+
+  if(pupil_stack_count >= 4){
+	  pupil_stack_count = 0;
+  }
+  else {
+	  pupil_stack_count += 1;
+  }
+  int loop_count;
+  for(loop_count = 0; loop_count<= 3; loop_count++){  
+	  pupil_smooth_position[loop_count] = 0;
+  }
+  pupil_smooth_position[0]
+  for(loop_count = 0; loop_count<= 4; loop_count++){  
+	  pupil_smooth_position[0] += pupil_position_stack[0][loop_count];
+	  pupil_smooth_position[1] += pupil_position_stack[1][loop_count];
+	  pupil_smooth_position[2] += pupil_position_stack[2][loop_count];
+	  pupil_smooth_position[3] += pupil_position_stack[3][loop_count];
+  }
+  printf("\e[1A");
+  printf("\e[K");
+  printf("Left pupil: (%.4f,%.4f), Right pupil: (%.4f,%.4f)\n",
+		pupil_smooth_position[0],
+		pupil_smooth_position[1],
+		pupil_smooth_position[2],
+		pupil_smooth_position[3]
 		  );
   // change eye centers to face coordinates
   rightPupil.x += rightEyeRegion.x;
