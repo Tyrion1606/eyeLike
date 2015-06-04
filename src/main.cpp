@@ -20,7 +20,7 @@ void detectAndDisplay( cv::Mat frame );
 
 /** Global variables */
 //-- Note, either copy these two files from opencv/data/haarscascades to your current folder, or change these locations
-cv::String face_cascade_name = "../../../res/haarcascade_frontalface_alt.xml";
+cv::String face_cascade_name = "./haarcascade_frontalface_alt.xml";
 cv::CascadeClassifier face_cascade;
 std::string main_window_name = "Capture - Face detection";
 std::string face_window_name = "Capture - Face";
@@ -42,21 +42,17 @@ int main( int argc, const char** argv ) {
   cv::moveWindow(main_window_name, 400, 100);
   cv::namedWindow(face_window_name,CV_WINDOW_NORMAL);
   cv::moveWindow(face_window_name, 10, 100);
-  cv::namedWindow("Right Eye",CV_WINDOW_NORMAL);
-  cv::moveWindow("Right Eye", 10, 600);
-  cv::namedWindow("Left Eye",CV_WINDOW_NORMAL);
-  cv::moveWindow("Left Eye", 10, 800);
-  cv::namedWindow("aa",CV_WINDOW_NORMAL);
-  cv::moveWindow("aa", 10, 800);
-  cv::namedWindow("aaa",CV_WINDOW_NORMAL);
-  cv::moveWindow("aaa", 10, 800);
+  //cv::namedWindow("Right Eye",CV_WINDOW_NORMAL);
+  //cv::moveWindow("Right Eye", 10, 600);
+  //cv::namedWindow("Left Eye",CV_WINDOW_NORMAL);
+  //cv::moveWindow("Left Eye", 10, 800);
 
   createCornerKernels();
   ellipse(skinCrCbHist, cv::Point(113, 155.6), cv::Size(23.4, 15.2),
           43.0, 0.0, 360.0, cv::Scalar(255, 255, 255), -1);
 
    // Read the video stream
-  capture = cvCaptureFromCAM( -1 );
+  capture = cvCaptureFromCAM( 1 );
   if( capture ) {
     while( true ) {
       frame = cvQueryFrame( capture );
@@ -128,10 +124,19 @@ void findEyes(cv::Mat frame_gray, cv::Rect face) {
   rightRightCornerRegion.x += rightPupil.x;
   rightRightCornerRegion.height /= 2;
   rightRightCornerRegion.y += rightRightCornerRegion.height / 2;
-  rectangle(debugFace,leftRightCornerRegion,200);
+/*  rectangle(debugFace,leftRightCornerRegion,200);
   rectangle(debugFace,leftLeftCornerRegion,200);
   rectangle(debugFace,rightLeftCornerRegion,200);
   rectangle(debugFace,rightRightCornerRegion,200);
+*///Compute the relative position
+  printf("\e[1A");
+  printf("\e[K");
+  printf("Left pupil: (%.4f,%.4f), Right pupil: (%.4f,%.4f)\n",
+		  (float) leftPupil.x/leftEyeRegion.width,
+		  (float) leftPupil.y/leftEyeRegion.height,
+		  (float) rightPupil.x/rightEyeRegion.width,
+		  (float) rightPupil.y/rightEyeRegion.height
+		  );
   // change eye centers to face coordinates
   rightPupil.x += rightEyeRegion.x;
   rightPupil.y += rightEyeRegion.y;
