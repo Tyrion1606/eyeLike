@@ -28,8 +28,8 @@ cv::RNG rng(12345);
 cv::Mat debugImage;
 cv::Mat skinCrCbHist = cv::Mat::zeros(cv::Size(256, 256), CV_8UC1);
 
-float pupil_position_stack[4][5];
-float pupil_smooth_position[4];
+int pupil_position_stack[4][5];
+int pupil_smooth_position[4];
 int pupil_stack_count = 0;
 /**
  * @function main
@@ -141,14 +141,10 @@ void findEyes(cv::Mat frame_gray, cv::Rect face) {
 		  (float) rightPupil.y/rightEyeRegion.height
 		  );
 */
-  pupil_position_stack[0][pupil_stack_count] =
-		(float) leftPupil.x/leftEyeRegion.width;
-  pupil_position_stack[1][pupil_stack_count] =
-		(float) leftPupil.y/leftEyeRegion.height;
-  pupil_position_stack[2][pupil_stack_count] =
-		(float) rightPupil.x/rightEyeRegion.width;
-  pupil_position_stack[3][pupil_stack_count] =
-		(float) rightPupil.y/rightEyeRegion.height;
+  pupil_position_stack[0][pupil_stack_count] = leftPupil.x;
+  pupil_position_stack[1][pupil_stack_count] = leftPupil.y;
+  pupil_position_stack[2][pupil_stack_count] = rightPupil.x;
+  pupil_position_stack[3][pupil_stack_count] = rightPupil.y;
 
   if(pupil_stack_count >= 4){
 	  pupil_stack_count = 0;
@@ -169,11 +165,17 @@ void findEyes(cv::Mat frame_gray, cv::Rect face) {
   printf("\e[1A");
   printf("\e[K");
   printf("Left pupil: (%.4f,%.4f), Right pupil: (%.4f,%.4f)\n",
-		pupil_smooth_position[0]/5,
-		pupil_smooth_position[1]/5,
-		pupil_smooth_position[2]/5,
-		pupil_smooth_position[3]/5
+		(float) pupil_smooth_position[0]/(leftEyeRegion.width  *  5),
+		(float) pupil_smooth_position[1]/(leftEyeRegion.height *  5),
+		(float) pupil_smooth_position[2]/(rightEyeRegion.width *  5),
+		(float) pupil_smooth_position[3]/(rightEyeRegion.height * 5)
 		  );
+   leftPupil.x  = (int) pupil_smooth_position[0]/5;
+   leftPupil.y  = (int) pupil_smooth_position[1]/5;
+   rightPupil.x = (int) pupil_smooth_position[2]/5;
+   rightPupil.y = (int) pupil_smooth_position[3]/5;
+
+
   // change eye centers to face coordinates
   rightPupil.x += rightEyeRegion.x;
   rightPupil.y += rightEyeRegion.y;
