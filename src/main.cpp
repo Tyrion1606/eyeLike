@@ -236,8 +236,8 @@ void findEyes(cv::Mat frame_gray, cv::Rect face) {
 			eye_p[1] = -45.0;
 			eyetracking_position[0] =(float) (leftPupil.x + rightPupil.x)/
 				(leftEyeRegion.width + rightEyeRegion.width);
-			eyetracking_position[1] =(float) (leftPupil.y + rightPupil.y)/
-				(leftEyeRegion.height+ rightEyeRegion.height);
+			eyetracking_position[1] =(float) (leftPupil.y)/
+				(leftEyeRegion.height);
 			reset_mouse();
 			pass_value(eye_p, &mouse_click);
 		}
@@ -246,8 +246,8 @@ void findEyes(cv::Mat frame_gray, cv::Rect face) {
 			eye_p[1] = -45.0;
 			eyetracking_position[2] =(float) (leftPupil.x + rightPupil.x)/
 				(leftEyeRegion.width + rightEyeRegion.width);
-			eyetracking_position[3] =(float) (leftPupil.y + rightPupil.y)/
-				(leftEyeRegion.height+ rightEyeRegion.height);
+			eyetracking_position[3] =(float) (leftPupil.y)/
+				(leftEyeRegion.height);
 			reset_mouse();
 			pass_value(eye_p, &mouse_click);
 		}
@@ -256,16 +256,16 @@ void findEyes(cv::Mat frame_gray, cv::Rect face) {
 			eye_p[1] = 45.0;
 			eyetracking_position[4] =(float) (leftPupil.x + rightPupil.x)/
 				(leftEyeRegion.width + rightEyeRegion.width);
-			eyetracking_position[5] =(float) (leftPupil.y + rightPupil.y)/
-				(leftEyeRegion.height+ rightEyeRegion.height);
+			eyetracking_position[5] =(float) (leftPupil.y)/
+				(leftEyeRegion.height);
 			reset_mouse();
 			pass_value(eye_p, &mouse_click);
 		}
 		else{
 			eyetracking_position[6] =(float) (leftPupil.x + rightPupil.x)/
 				(leftEyeRegion.width + rightEyeRegion.width);
-			eyetracking_position[7] =(float) (leftPupil.y + rightPupil.y)/
-				(leftEyeRegion.height+ rightEyeRegion.height);
+			eyetracking_position[7] =(float) (leftPupil.y)/
+				(leftEyeRegion.height);
 			reset_mouse();
 			program_state = 0;
 			printf("\n%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t\n\n",
@@ -290,8 +290,8 @@ void findEyes(cv::Mat frame_gray, cv::Rect face) {
 					- eyetracking_position[0]) /
 				(eyetracking_position[4] - eyetracking_position[0]);
 			tmp_p1[1] =(float)
-				(	((float)(leftPupil.y + rightPupil.y)/
-					(leftEyeRegion.height+ rightEyeRegion.height))
+				(	((float)(leftPupil.y)/
+					(leftEyeRegion.height))
 					- eyetracking_position[1]) /
 				(eyetracking_position[5] - eyetracking_position[1]);
 			tmp_p2[0] =(float)
@@ -300,8 +300,8 @@ void findEyes(cv::Mat frame_gray, cv::Rect face) {
 					- eyetracking_position[2]) /
 				(eyetracking_position[6] - eyetracking_position[2]);
 			tmp_p2[1] =(float)
-				(	((float)(leftPupil.y + rightPupil.y)/
-					(leftEyeRegion.height+ rightEyeRegion.height))
+				(	((float)(leftPupil.y)/
+					(leftEyeRegion.height))
 					- eyetracking_position[7])/
 				(eyetracking_position[3] - eyetracking_position[7]);
 			tmp_p[0] = 90* (tmp_p1[0] + tmp_p2[0]) / 2 - 50;
@@ -315,10 +315,16 @@ void findEyes(cv::Mat frame_gray, cv::Rect face) {
 			}
 
 			if(eye_p[1] < tmp_p[1]){
-				eye_p[1] += (tmp_p[1] - eye_p[1])/ 10;
+				if(tmp_p[1] > 60)
+					eye_p[1] += 3;//(eye_p[1] - tmp_p[1])/ 10;
+				else
+					eye_p[1] += (tmp_p[1] - eye_p[1])/ 5; 
 			}
 			else{
-				eye_p[1] -= (eye_p[1] - tmp_p[1])/ 10;
+				if(tmp_p[1] < -60)
+					eye_p[1] -= 3;//(eye_p[1] - tmp_p[1])/ 10;
+				else
+					eye_p[1] -= (eye_p[1] - tmp_p[1])/ 5;
 			}
 
 			if (eye_p[0] > 49){
