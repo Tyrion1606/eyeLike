@@ -42,8 +42,9 @@ pthread_t tid[2];
 float eye_p[2];
 int mouse_click;
 float eyetracking_position[8];
+float eyetracking_position_right[4];
 int program_state= 0;
-float tmp_p1[2],tmp_p2[2],tmp_p[2];
+float tmp_p1[2],tmp_p2[2],tmp_p[2],tmp_pr[2];
 typedef struct ThreadArgs {
 	int argc;
 	const char** argv;
@@ -238,6 +239,8 @@ void findEyes(cv::Mat frame_gray, cv::Rect face) {
 				(leftEyeRegion.width + rightEyeRegion.width);
 			eyetracking_position[1] =(float) (leftPupil.y)/
 				(leftEyeRegion.height);
+			eyetracking_position_right[0] =(float) (rightPupil.y)/
+				(rightEyeRegion.height);
 			reset_mouse();
 			pass_value(eye_p, &mouse_click);
 		}
@@ -248,6 +251,8 @@ void findEyes(cv::Mat frame_gray, cv::Rect face) {
 				(leftEyeRegion.width + rightEyeRegion.width);
 			eyetracking_position[3] =(float) (leftPupil.y)/
 				(leftEyeRegion.height);
+			eyetracking_position_right[1] =(float) (rightPupil.y)/
+				(rightEyeRegion.height);
 			reset_mouse();
 			pass_value(eye_p, &mouse_click);
 		}
@@ -258,6 +263,8 @@ void findEyes(cv::Mat frame_gray, cv::Rect face) {
 				(leftEyeRegion.width + rightEyeRegion.width);
 			eyetracking_position[5] =(float) (leftPupil.y)/
 				(leftEyeRegion.height);
+			eyetracking_position_right[2] =(float) (rightPupil.y)/
+				(rightEyeRegion.height);
 			reset_mouse();
 			pass_value(eye_p, &mouse_click);
 		}
@@ -266,6 +273,8 @@ void findEyes(cv::Mat frame_gray, cv::Rect face) {
 				(leftEyeRegion.width + rightEyeRegion.width);
 			eyetracking_position[7] =(float) (leftPupil.y)/
 				(leftEyeRegion.height);
+			eyetracking_position_right[3] =(float) (rightPupil.y)/
+				(rightEyeRegion.height);
 			reset_mouse();
 			program_state = 0;
 			printf("\n%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t\n\n",
@@ -292,7 +301,7 @@ void findEyes(cv::Mat frame_gray, cv::Rect face) {
 			tmp_p1[1] =(float)
 				(	((float)(leftPupil.y)/
 					(leftEyeRegion.height))
-					- eyetracking_position[1]) /
+					- eyetracking_position[1])/
 				(eyetracking_position[5] - eyetracking_position[1]);
 			tmp_p2[0] =(float)
 				(	((float)(leftPupil.x + rightPupil.x)/
@@ -304,8 +313,19 @@ void findEyes(cv::Mat frame_gray, cv::Rect face) {
 					(leftEyeRegion.height))
 					- eyetracking_position[7])/
 				(eyetracking_position[3] - eyetracking_position[7]);
+			tmp_pr[0] =(float)
+				(	((float)(rightPupil.y)/
+					(rightEyeRegion.height))
+					- eyetracking_position_right[0])/
+				(eyetracking_position_right[2] - eyetracking_position_right[0]);
+			tmp_pr[1] =(float)
+				(	((float)(rightPupil.y)/
+					(rightEyeRegion.height))
+					- eyetracking_position_right[3])/
+				(eyetracking_position_right[1] - eyetracking_position_right[3]);
+
 			tmp_p[0] = 90* (tmp_p1[0] + tmp_p2[0]) / 2 - 50;
-			tmp_p[1] = -90*(tmp_p1[1] + tmp_p2[1]) / 2 + 50;
+			tmp_p[1] = -90*(tmp_p1[1] + tmp_p2[1] + tmp_pr[0] + tmp_pr[1]) / 4 + 50;
 
 			if(eye_p[0] < tmp_p[0]){
 				eye_p[0] += (tmp_p[0] - eye_p[0])/ 5;
