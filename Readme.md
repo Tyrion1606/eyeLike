@@ -49,3 +49,7 @@ Applications (VISAPP), volume 1, pages 125-130, Algarve, Portugal,
 2011. INSTICC.
 
 (also see youtube video at http://www.youtube.com/watch?feature=player_embedded&v=aGmGyFLQAFM)
+
+Prepare
+
+sudo apt-get install libxmu-dev libxi-dev freeglut3-dev
