@@ -104,7 +104,7 @@ int main( int argc, const char** argv ) {
 	createCornerKernels();
 	ellipse(skinCrCbHist, cv::Point(113, 155.6), cv::Size(23.4, 15.2),
 			43.0, 0.0, 360.0, cv::Scalar(255, 255, 255), -1);
-	VideoCapture capture(1);
+	VideoCapture capture(0);
 	// Read the video stream
 	//capture = cvCaptureFromCAM( 1 );
 	if( capture.isOpened() ) {
