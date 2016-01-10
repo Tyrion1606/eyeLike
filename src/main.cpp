@@ -75,9 +75,11 @@ int main( int argc, const char** argv ) {
 	};
 
 	cv::namedWindow(main_window_name,CV_WINDOW_NORMAL);
-	cv::moveWindow(main_window_name, 400, 100);
+	cv::moveWindow(main_window_name, 800, 0);
+	cv::resizeWindow(main_window_name, 400, 300);
 	cv::namedWindow(face_window_name,CV_WINDOW_NORMAL);
-	cv::moveWindow(face_window_name, 10, 100);
+	cv::moveWindow(face_window_name, 800, 300);
+	cv::resizeWindow(face_window_name, 400, 300);
 	//cv::namedWindow("Right Eye",CV_WINDOW_NORMAL);
 	//cv::moveWindow("Right Eye", 10, 600);
 	//cv::namedWindow("Left Eye",CV_WINDOW_NORMAL);
