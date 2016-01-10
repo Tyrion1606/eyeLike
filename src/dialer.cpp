@@ -121,16 +121,25 @@ public:
 
 	void detectEyeMovement()
 	{
-		if (wait_ticks <= 0) {
-			if (getMovingAverage() < 0.44) {
-				selectPrev();
-				wait_ticks = debounce_delay_ticks;
-			} else if (getMovingAverage() > 0.56) {
-				selectNext();
-				wait_ticks = debounce_delay_ticks;
-			}
-		} else {
+		if (wait_ticks > 0) {
 			wait_ticks--;
+			return;
+		}
+
+		float diff = getMovingAverage() - 0.5;
+		int movement = 0;
+		if (diff < -0.06)
+			movement = -1;
+		else if (diff > 0.06)
+			movement = 1;
+
+		if (movement < 0)
+			selectPrev();
+		else if (movement > 0)
+			selectNext();
+
+		if (movement != 0) {
+			wait_ticks = debounce_delay_ticks;
 		}
 	}
 };
