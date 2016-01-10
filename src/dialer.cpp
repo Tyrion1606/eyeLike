@@ -31,13 +31,17 @@ class Dialer::Private
 public:
 	string input;
 	Mat canvas;
-	int current_choice;
+	int current_choice_index;
+	vector<string> choices;
 	deque<float> position_history;
 	int wait_ticks;
 	
 	Private() : canvas(Mat::zeros(window_height, window_width, CV_8UC3)),
-		current_choice(0), wait_ticks(0)
+		current_choice_index(0), wait_ticks(0)
 	{
+		// chocies: 0~9
+		for (int i = 0; i <= 9; i++)
+			choices.push_back(str(i));
 	}
 
 	void clear()
@@ -70,28 +74,38 @@ public:
 		const int center_x = window_width / 2, center_y = window_height / 2;
 
 		// draw the current choice at the center
-		drawTextCentered(str(current_choice), center_x, center_y,
+		drawTextCentered(currentChoice(), center_x, center_y,
 				CV_RGB(255, 0, 0), 2.5);
 
 		// draw the previous and next choices
 		// TODO: extract the transition functions
-		const int prev_choice = (current_choice + 10 - 1) % 10;
-		const int next_choices = (current_choice + 1) % 10;
+		const string prev_choice = choices[prevChoiceIndex()];
+		const string next_choices = choices[nextChoiceIndex()];
 
-		drawTextCentered(str(prev_choice), center_x - 100, center_y,
+		drawTextCentered(prev_choice, center_x - 100, center_y,
 				CV_RGB(255, 0, 0), 1.5);
-		drawTextCentered(str(next_choices), center_x + 100, center_y,
+		drawTextCentered(next_choices, center_x + 100, center_y,
 				CV_RGB(255, 0, 0), 1.5);
 	}
 
-	void prevChoice()
-	{
-		current_choice = (current_choice + 10 - 1) % 10;
+	string currentChoice() {
+		return choices[current_choice_index];
 	}
 
-	void nextChoice()
-	{
-		current_choice = (current_choice + 1) % 10;
+	void selectNext() {
+		current_choice_index = nextChoiceIndex();
+	}
+
+	void selectPrev() {
+		current_choice_index = prevChoiceIndex();
+	}
+
+	int prevChoiceIndex() {
+		return (current_choice_index + choices.size() - 1) % choices.size();
+	}
+
+	int nextChoiceIndex() {
+		return (current_choice_index + 1) % choices.size();
 	}
 
 	float getMovingAverage()
@@ -132,10 +146,10 @@ void Dialer::keypress(int key)
 	switch (key)
 	{
 		case 'h':
-			p->prevChoice();
+			p->selectNext();
 			break;
 		case 'l':
-			p->nextChoice();
+			p->selectPrev();
 			break;
 	}
 }
@@ -149,10 +163,10 @@ void Dialer::tick()
 
 	if (p->wait_ticks <= 0) {
 		if (p->getMovingAverage() < 0.44) {
-			p->prevChoice();
+			p->selectPrev();
 			p->wait_ticks = debounce_delay_ticks;
 		} else if (p->getMovingAverage() > 0.56) {
-			p->nextChoice();
+			p->selectNext();
 			p->wait_ticks = debounce_delay_ticks;
 		}
 	} else {
