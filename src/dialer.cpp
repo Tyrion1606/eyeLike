@@ -15,6 +15,7 @@ const int window_width = 800;
 const int window_height = 600;
 const char *dialer_window_name = "dialer";
 const int moving_average_size = 5;
+const int debounce_delay_ticks = 10;
 
 // convert integer to string
 string str(int n)
@@ -32,9 +33,10 @@ public:
 	Mat canvas;
 	int current_choice;
 	deque<float> position_history;
+	int wait_ticks;
 	
 	Private() : canvas(Mat::zeros(window_height, window_width, CV_8UC3)),
-		current_choice(0)
+		current_choice(0), wait_ticks(0)
 	{
 	}
 
@@ -145,12 +147,17 @@ void Dialer::tick()
 	p->drawChoices();
 	p->show();
 
-	if (p->getMovingAverage() < 0.44) {
-		p->prevChoice();
-	} else if (p->getMovingAverage() > 0.56) {
-		p->nextChoice();
+	if (p->wait_ticks <= 0) {
+		if (p->getMovingAverage() < 0.44) {
+			p->prevChoice();
+			p->wait_ticks = debounce_delay_ticks;
+		} else if (p->getMovingAverage() > 0.56) {
+			p->nextChoice();
+			p->wait_ticks = debounce_delay_ticks;
+		}
+	} else {
+		p->wait_ticks--;
 	}
-
 }
 
 void Dialer::updatePupilPosition(float pupil_left_x, float pupil_left_y,
