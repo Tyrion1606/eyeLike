@@ -38,13 +38,15 @@ public:
 	deque<float> position_history;
 	int wait_ticks;
 	int countdown;
-	
+
 	Private() : canvas(Mat::zeros(window_height, window_width, CV_8UC3)),
 		current_choice_index(0), wait_ticks(0), countdown(countdown_ticks)
 	{
 		// chocies: 0~9
 		for (int i = 0; i <= 9; i++)
 			choices.push_back(str(i));
+		// delete backward
+		choices.push_back("Del");
 	}
 
 	void clear()
@@ -165,7 +167,13 @@ public:
 
 	void commitChoice()
 	{
-		input += currentChoice();
+		const string& choice = currentChoice();
+		if (choice == "Del") {
+			if (!input.empty())
+				input.erase(input.size() - 1); // remove the last character
+		} else {
+			input += currentChoice();
+		}
 	}
 
 };
