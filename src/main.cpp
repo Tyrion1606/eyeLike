@@ -117,8 +117,9 @@ int main( int argc, const char** argv ) {
 				if(key == 'q')
 					break;
 				dialer.keypress(key);
+			} else {
+				dialer.tick();
 			}
-			dialer.tick();
 		}
 	}
 
