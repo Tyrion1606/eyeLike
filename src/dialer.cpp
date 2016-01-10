@@ -40,7 +40,7 @@ public:
 	int countdown;
 	
 	Private() : canvas(Mat::zeros(window_height, window_width, CV_8UC3)),
-		current_choice_index(0), wait_ticks(0), countdown(0)
+		current_choice_index(0), wait_ticks(0), countdown(countdown_ticks)
 	{
 		// chocies: 0~9
 		for (int i = 0; i <= 9; i++)
@@ -159,7 +159,13 @@ public:
 			countdown--;
 		else {
 			countdown = countdown_ticks;
+			commitChoice();
 		}
+	}
+
+	void commitChoice()
+	{
+		input += currentChoice();
 	}
 
 };
