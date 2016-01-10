@@ -17,7 +17,7 @@ const char *dialer_window_name = "dialer";
 const int moving_average_size = 5;
 const int ticks_per_seconds = 25;
 const int debounce_delay_ticks = 10;
-const int countdown_ticks = 99;
+const int countdown_ticks = 74;
 
 // convert integer to string
 string str(int n)
@@ -92,7 +92,7 @@ public:
 	}
 
 	void drawCountdown() {
-		int seconds = countdown / ticks_per_seconds;
+		int seconds = countdown / ticks_per_seconds + 1;
 		drawTextCentered(str(seconds), window_width / 2, window_height / 4,
 				CV_RGB(0, 255, 0), 1.5);
 	}
