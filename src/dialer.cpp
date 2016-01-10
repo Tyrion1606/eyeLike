@@ -49,10 +49,37 @@ public:
 		putText(canvas, s, Point(x, y), FONT_HERSHEY_SIMPLEX, scale, color,
 				thickness);
 	}
-	
+
+	void drawTextCentered(const string& s, int x, int y, Scalar color,
+			double scale = 1.0)
+	{
+		const int thickness = 2;
+		Size size = getTextSize(s, FONT_HERSHEY_SIMPLEX, scale, thickness, NULL);
+		drawText(s, x - size.width / 2, y - size.height / 2, color, scale);
+	}
+
 	void show()
 	{
 		imshow(dialer_window_name, canvas);
+	}
+
+	void drawChoices()
+	{
+		const int center_x = window_width / 2, center_y = window_height / 2;
+
+		// draw the current choice at the center
+		drawTextCentered(str(current_choice), center_x, center_y,
+				CV_RGB(255, 0, 0), 2.5);
+
+		// draw the previous and next choices
+		// TODO: extract the transition functions
+		const int prev_choice = (current_choice + 10 - 1) % 10;
+		const int next_choices = (current_choice + 1) % 10;
+
+		drawTextCentered(str(prev_choice), center_x - 100, center_y,
+				CV_RGB(255, 0, 0), 1.5);
+		drawTextCentered(str(next_choices), center_x + 100, center_y,
+				CV_RGB(255, 0, 0), 1.5);
 	}
 
 	void prevChoice()
@@ -115,8 +142,7 @@ void Dialer::tick()
 {
 	p->clear();
 	p->drawText(p->input, 100, 100, CV_RGB(255, 0, 0));
-	p->drawText(str(p->current_choice), window_width/2, window_height/2,
-			CV_RGB(255, 0, 0), 2.0);
+	p->drawChoices();
 	p->show();
 
 	if (p->getMovingAverage() < 0.44) {
