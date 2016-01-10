@@ -15,7 +15,9 @@ const int window_width = 800;
 const int window_height = 600;
 const char *dialer_window_name = "dialer";
 const int moving_average_size = 5;
+const int ticks_per_seconds = 25;
 const int debounce_delay_ticks = 10;
+const int countdown_ticks = 99;
 
 // convert integer to string
 string str(int n)
@@ -35,9 +37,10 @@ public:
 	vector<string> choices;
 	deque<float> position_history;
 	int wait_ticks;
+	int countdown;
 	
 	Private() : canvas(Mat::zeros(window_height, window_width, CV_8UC3)),
-		current_choice_index(0), wait_ticks(0)
+		current_choice_index(0), wait_ticks(0), countdown(0)
 	{
 		// chocies: 0~9
 		for (int i = 0; i <= 9; i++)
@@ -86,6 +89,12 @@ public:
 				CV_RGB(255, 0, 0), 1.5);
 		drawTextCentered(next_choices, center_x + 100, center_y,
 				CV_RGB(255, 0, 0), 1.5);
+	}
+
+	void drawCountdown() {
+		int seconds = countdown / ticks_per_seconds;
+		drawTextCentered(str(seconds), window_width / 2, window_height / 4,
+				CV_RGB(0, 255, 0), 1.5);
 	}
 
 	string currentChoice() {
@@ -140,8 +149,19 @@ public:
 
 		if (movement != 0) {
 			wait_ticks = debounce_delay_ticks;
+			countdown = countdown_ticks;
 		}
 	}
+
+	void checkCountdown()
+	{
+		if (countdown > 0)
+			countdown--;
+		else {
+			countdown = countdown_ticks;
+		}
+	}
+
 };
 
 Dialer::Dialer() : p(new Private)
@@ -183,8 +203,10 @@ void Dialer::tick()
 	p->clear();
 	p->drawText(p->input, 100, 100, CV_RGB(255, 0, 0));
 	p->drawChoices();
+	p->drawCountdown();
 	p->show();
 	p->detectEyeMovement();
+	p->checkCountdown();
 }
 
 void Dialer::updatePupilPosition(float pupil_left_x, float pupil_left_y,
