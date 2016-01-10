@@ -99,6 +99,14 @@ public:
 				CV_RGB(0, 255, 0), 1.5);
 	}
 
+	void drawAll() {
+		clear();
+		drawText(input, 100, 100, CV_RGB(255, 0, 0));
+		drawChoices();
+		drawCountdown();
+		show();
+	}
+
 	string currentChoice() {
 		return choices[current_choice_index];
 	}
@@ -214,11 +222,7 @@ void Dialer::keypress(int key)
 
 void Dialer::tick()
 {
-	p->clear();
-	p->drawText(p->input, 100, 100, CV_RGB(255, 0, 0));
-	p->drawChoices();
-	p->drawCountdown();
-	p->show();
+	p->drawAll();
 	p->detectEyeMovement();
 	p->checkCountdown();
 }
