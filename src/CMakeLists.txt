@@ -10,10 +10,9 @@ endif(NOT GLUT_FOUND)
 INCLUDE_DIRECTORIES(${OPENGL_INCLUDE_DIRS} ${GLUT_INCLUDE_DIRS})
 
 SET(LIBRARIES ${LIBRARIES} ${OPENGL_LIBRARIES})
-SET(LIBRARIES ${LIBRARIES} ${GLUT_LIBRARY})
 SET(LIBRARIES ${LIBRARIES} ${OpenCV_LIBS})
 
-ADD_EXECUTABLE( eyeLike main.cpp findEyeCenter.cpp findEyeCenter.h findEyeCorner.cpp findEyeCorner.h constants.h helpers.cpp helpers.h eyegui.cpp eyegui.h)
+ADD_EXECUTABLE( eyeLike main.cpp findEyeCenter.cpp findEyeCenter.h findEyeCorner.cpp findEyeCorner.h constants.h helpers.cpp helpers.h dialer.cpp dialer.h)
 TARGET_LINK_LIBRARIES( eyeLike ${LIBRARIES} pthread)
 #target_link_libraries( eyeLike ${MGL})
 

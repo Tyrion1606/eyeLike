@@ -3,10 +3,7 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/opencv.hpp>
 
-#include <GL/glew.h>
-#include <GL/glut.h>
 #include <pthread.h>
-#include "eyegui.h"
 
 #include <iostream>
 #include <queue>
@@ -16,6 +13,8 @@
 #include "constants.h"
 #include "findEyeCenter.h"
 #include "findEyeCorner.h"
+
+#include "dialer.h"
 
 using namespace cv;
 
@@ -34,6 +33,7 @@ std::string face_window_name = "Capture - Face";
 cv::RNG rng(12345);
 cv::Mat debugImage;
 cv::Mat skinCrCbHist = cv::Mat::zeros(cv::Size(256, 256), CV_8UC1);
+Dialer dialer;
 
 int pupil_position_stack[4][5];
 int pupil_smooth_position[4];
@@ -50,24 +50,6 @@ typedef struct ThreadArgs {
 	const char** argv;
 } ThreadArgs;
 
-void* thread_gui(void* arg)
-{
-	pthread_detach(pthread_self());
-	ThreadArgs* arg_struct = (ThreadArgs*) arg;
-	free(arg);
-	glutInit(&arg_struct->argc,(char**)arg_struct->argv);
-	glutInitDisplayMode (GLUT_DOUBLE | GLUT_RGBA);
-	glutInitWindowSize (1000, 1000);
-	//glutInitWindowPosition (100, 100);
-	glutCreateWindow (arg_struct->argv[0]);
-	glutFullScreen();
-	init ();
-	glutDisplayFunc(display);
-	glutReshapeFunc(reshape);
-	glutMouseFunc(mouse);
-	glutMainLoop();
-}
-
 /**
  * @function main
  */
@@ -78,9 +60,9 @@ int main( int argc, const char** argv ) {
 	arg_struct->argc = argc;
 	arg_struct->argv = argv;
 
-	err =	pthread_create(&tid[0],NULL,&thread_gui,(void *) arg_struct);
-	if (err!=0)
-		printf("pthread faild");
+	//err =	pthread_create(&tid[0],NULL,&thread_gui,(void *) arg_struct);
+	//if (err!=0)
+	//	printf("pthread faild");
 
 	//  CvCapture* capture;
 	cv::Mat frame;
@@ -100,6 +82,8 @@ int main( int argc, const char** argv ) {
 	//cv::moveWindow("Right Eye", 10, 600);
 	//cv::namedWindow("Left Eye",CV_WINDOW_NORMAL);
 	//cv::moveWindow("Left Eye", 10, 800);
+
+	dialer.start();
 
 	createCornerKernels();
 	ellipse(skinCrCbHist, cv::Point(113, 155.6), cv::Size(23.4, 15.2),
@@ -126,15 +110,18 @@ int main( int argc, const char** argv ) {
 
 			imshow(main_window_name,debugImage);
 
-			int c = cv::waitKey(10);
-			if( (char)c == 'c' ) { break; }
-			if( (char)c == 'f' ) {
-				imwrite("frame.png",frame);
+			int key = cv::waitKey(10);
+			if (key != -1) { // -1 means no key is pressed
+				if(key == 'q')
+					break;
+				dialer.keypress(key);
 			}
+			dialer.tick();
 		}
 	}
 
 	releaseCornerKernels();
+	dialer.stop();
 
 	return 0;
 }
@@ -209,163 +196,25 @@ void findEyes(cv::Mat frame_gray, cv::Rect face) {
 		pupil_smooth_position[2] += pupil_position_stack[2][loop_count];
 		pupil_smooth_position[3] += pupil_position_stack[3][loop_count];
 	}
-	printf("\e[1A");
-	printf("\e[K");
-	printf("Left pupil: (%.4f,%.4f), Right pupil: (%.4f,%.4f)\n",
-			(float) pupil_smooth_position[0]/(leftEyeRegion.width   * 5),
-			(float) pupil_smooth_position[1]/(leftEyeRegion.height  * 5),
-			(float) pupil_smooth_position[2]/(rightEyeRegion.width  * 5),
-			(float) pupil_smooth_position[3]/(rightEyeRegion.height * 5)
-		  );
+	//printf("\e[1A");
+	//printf("\e[K");
+
+	float pupil_left_x  = (float) pupil_smooth_position[0]/(leftEyeRegion.width   * 5);
+	float pupil_left_y  = (float) pupil_smooth_position[1]/(leftEyeRegion.height  * 5);
+	float pupil_right_x = (float) pupil_smooth_position[2]/(rightEyeRegion.width  * 5);
+	float pupil_right_y = (float) pupil_smooth_position[3]/(rightEyeRegion.height * 5);
+	//printf("Left pupil: (%.4f,%.4f), Right pupil: (%.4f,%.4f)\n",
+	//		pupil_left_x, pupil_left_y, pupil_right_x, pupil_right_y);
+	dialer.updatePupilPosition(pupil_left_x, pupil_left_y,
+			pupil_right_x, pupil_right_y);
+
 	leftPupil.x  = (int) pupil_smooth_position[0]/5;
 	leftPupil.y  = (int) pupil_smooth_position[1]/5;
 	rightPupil.x = (int) pupil_smooth_position[2]/5;
 	rightPupil.y = (int) pupil_smooth_position[3]/5;
 	// program for eyegazing
 
-	pass_value(eye_p, &mouse_click);
-	if(mouse_click == 1){
-		program_state += 1;
-		if(program_state == 1){
-			eye_p[0] = -45.0;
-			eye_p[1] = 45.0;
-			reset_mouse();
-			pass_value(eye_p, &mouse_click);
-		}
-		else if(program_state == 2){
-			eye_p[0] = -45.0;
-			eye_p[1] = -45.0;
-			eyetracking_position[0] =(float) (leftPupil.x + rightPupil.x)/
-				(leftEyeRegion.width + rightEyeRegion.width);
-			eyetracking_position[1] =(float) (leftPupil.y)/
-				(leftEyeRegion.height);
-			eyetracking_position_right[0] =(float) (rightPupil.y)/
-				(rightEyeRegion.height);
-			reset_mouse();
-			pass_value(eye_p, &mouse_click);
-		}
-		else if(program_state == 3){
-			eye_p[0] = 45.0;
-			eye_p[1] = -45.0;
-			eyetracking_position[2] =(float) (leftPupil.x + rightPupil.x)/
-				(leftEyeRegion.width + rightEyeRegion.width);
-			eyetracking_position[3] =(float) (leftPupil.y)/
-				(leftEyeRegion.height);
-			eyetracking_position_right[1] =(float) (rightPupil.y)/
-				(rightEyeRegion.height);
-			reset_mouse();
-			pass_value(eye_p, &mouse_click);
-		}
-		else if(program_state == 4){
-			eye_p[0] = 45.0;
-			eye_p[1] = 45.0;
-			eyetracking_position[4] =(float) (leftPupil.x + rightPupil.x)/
-				(leftEyeRegion.width + rightEyeRegion.width);
-			eyetracking_position[5] =(float) (leftPupil.y)/
-				(leftEyeRegion.height);
-			eyetracking_position_right[2] =(float) (rightPupil.y)/
-				(rightEyeRegion.height);
-			reset_mouse();
-			pass_value(eye_p, &mouse_click);
-		}
-		else{
-			eyetracking_position[6] =(float) (leftPupil.x + rightPupil.x)/
-				(leftEyeRegion.width + rightEyeRegion.width);
-			eyetracking_position[7] =(float) (leftPupil.y)/
-				(leftEyeRegion.height);
-			eyetracking_position_right[3] =(float) (rightPupil.y)/
-				(rightEyeRegion.height);
-			reset_mouse();
-			program_state = 0;
-			printf("\n%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t\n\n",
-					eyetracking_position[0],
-					eyetracking_position[1],
-					eyetracking_position[2],
-					eyetracking_position[3],
-					eyetracking_position[4],
-					eyetracking_position[5],
-					eyetracking_position[6],
-					eyetracking_position[7]
-					);
-		}
-	}
-	else
-	{
-		if (program_state == 0)
-		{
-			tmp_p1[0] =(float)
-				(	((float)(leftPupil.x + rightPupil.x)/
-					(leftEyeRegion.width + rightEyeRegion.width))
-					- eyetracking_position[0]) /
-				(eyetracking_position[4] - eyetracking_position[0]);
-			tmp_p1[1] =(float)
-				(	((float)(leftPupil.y)/
-					(leftEyeRegion.height))
-					- eyetracking_position[1])/
-				(eyetracking_position[5] - eyetracking_position[1]);
-			tmp_p2[0] =(float)
-				(	((float)(leftPupil.x + rightPupil.x)/
-					(leftEyeRegion.width + rightEyeRegion.width))
-					- eyetracking_position[2]) /
-				(eyetracking_position[6] - eyetracking_position[2]);
-			tmp_p2[1] =(float)
-				(	((float)(leftPupil.y)/
-					(leftEyeRegion.height))
-					- eyetracking_position[7])/
-				(eyetracking_position[3] - eyetracking_position[7]);
-			tmp_pr[0] =(float)
-				(	((float)(rightPupil.y)/
-					(rightEyeRegion.height))
-					- eyetracking_position_right[0])/
-				(eyetracking_position_right[2] - eyetracking_position_right[0]);
-			tmp_pr[1] =(float)
-				(	((float)(rightPupil.y)/
-					(rightEyeRegion.height))
-					- eyetracking_position_right[3])/
-				(eyetracking_position_right[1] - eyetracking_position_right[3]);
-
-			tmp_p[0] = 90* (tmp_p1[0] + tmp_p2[0]) / 2 - 50;
-			tmp_p[1] = -90*(tmp_p1[1] + tmp_p2[1] + tmp_pr[0] + tmp_pr[1]) / 4 + 50;
-
-			if(eye_p[0] < tmp_p[0]){
-				eye_p[0] += (tmp_p[0] - eye_p[0])/ 5;
-			}
-			else{
-				eye_p[0] -= (eye_p[0] - tmp_p[0])/ 5;
-			}
-
-			if(eye_p[1] < tmp_p[1]){
-				if(tmp_p[1] > 60)
-					eye_p[1] += 3;//(eye_p[1] - tmp_p[1])/ 10;
-				else
-					eye_p[1] += (tmp_p[1] - eye_p[1])/ 5; 
-			}
-			else{
-				if(tmp_p[1] < -60)
-					eye_p[1] -= 3;//(eye_p[1] - tmp_p[1])/ 10;
-				else
-					eye_p[1] -= (eye_p[1] - tmp_p[1])/ 5;
-			}
-
-			if (eye_p[0] > 49){
-				eye_p[0] = 49.0;
-			}
-			else if (eye_p[0] < -49){
-				eye_p[0] = -49.0;
-			}
-			if (eye_p[1] > 49){
-				eye_p[1] = 49.0;
-			}
-			else if (eye_p[1] < -49){
-				eye_p[1] = -49.0;
-			}
-
-
-			printf("\n\n%f\t%f\t\n\n",tmp_p[0],tmp_p[1]);
-		}
-	}
-
-
+	//pass_value(eye_p, &mouse_click);
 
 	// change eye centers to face coordinates
 	rightPupil.x += rightEyeRegion.x;
