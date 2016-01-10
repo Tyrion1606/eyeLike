@@ -118,6 +118,21 @@ public:
 			sum += position_history[i];
 		return sum / position_history.size();
 	}
+
+	void detectEyeMovement()
+	{
+		if (wait_ticks <= 0) {
+			if (getMovingAverage() < 0.44) {
+				selectPrev();
+				wait_ticks = debounce_delay_ticks;
+			} else if (getMovingAverage() > 0.56) {
+				selectNext();
+				wait_ticks = debounce_delay_ticks;
+			}
+		} else {
+			wait_ticks--;
+		}
+	}
 };
 
 Dialer::Dialer() : p(new Private)
@@ -160,18 +175,7 @@ void Dialer::tick()
 	p->drawText(p->input, 100, 100, CV_RGB(255, 0, 0));
 	p->drawChoices();
 	p->show();
-
-	if (p->wait_ticks <= 0) {
-		if (p->getMovingAverage() < 0.44) {
-			p->selectPrev();
-			p->wait_ticks = debounce_delay_ticks;
-		} else if (p->getMovingAverage() > 0.56) {
-			p->selectNext();
-			p->wait_ticks = debounce_delay_ticks;
-		}
-	} else {
-		p->wait_ticks--;
-	}
+	p->detectEyeMovement();
 }
 
 void Dialer::updatePupilPosition(float pupil_left_x, float pupil_left_y,
