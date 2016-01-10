@@ -33,6 +33,7 @@ class Dialer::Private
 public:
 	string input;
 	Mat canvas;
+	int started;
 	int current_choice_index;
 	vector<string> choices;
 	deque<float> position_history;
@@ -40,7 +41,8 @@ public:
 	int countdown;
 
 	Private() : canvas(Mat::zeros(window_height, window_width, CV_8UC3)),
-		current_choice_index(0), wait_ticks(0), countdown(countdown_ticks)
+		started(true), current_choice_index(0), wait_ticks(0),
+		countdown(countdown_ticks)
 	{
 		// chocies: 0~9
 		for (int i = 0; i <= 9; i++)
@@ -101,9 +103,11 @@ public:
 
 	void drawAll() {
 		clear();
-		drawText(input, 100, 100, CV_RGB(255, 0, 0));
-		drawChoices();
-		drawCountdown();
+		if (started) {
+			drawText(input, 100, 100, CV_RGB(255, 0, 0));
+			drawChoices();
+			drawCountdown();
+		}
 		show();
 	}
 
@@ -152,14 +156,20 @@ public:
 		else if (diff > 0.06)
 			movement = 1;
 
-		if (movement < 0)
-			selectPrev();
-		else if (movement > 0)
-			selectNext();
+		eyeMovememnt(movement);
+	}
 
-		if (movement != 0) {
-			wait_ticks = debounce_delay_ticks;
-			countdown = countdown_ticks;
+	void eyeMovememnt(int movement)
+	{
+		if (started) {
+			if (movement < 0)
+				selectPrev();
+			else if (movement > 0)
+				selectNext();
+			if (movement != 0) {
+				wait_ticks = debounce_delay_ticks;
+				countdown = countdown_ticks;
+			}
 		}
 	}
 
@@ -181,6 +191,15 @@ public:
 				input.erase(input.size() - 1); // remove the last character
 		} else {
 			input += currentChoice();
+		}
+	}
+
+	void tick()
+	{
+		drawAll();
+		if (started) {
+			detectEyeMovement();
+			checkCountdown();
 		}
 	}
 
@@ -222,9 +241,7 @@ void Dialer::keypress(int key)
 
 void Dialer::tick()
 {
-	p->drawAll();
-	p->detectEyeMovement();
-	p->checkCountdown();
+	p->tick();
 }
 
 void Dialer::updatePupilPosition(float pupil_left_x, float pupil_left_y,
