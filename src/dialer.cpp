@@ -43,6 +43,7 @@ class DialerContext;
 class State
 {
 public:
+	virtual ~State() { }
 	virtual void enter(DialerContext *ctx) {};
 	virtual void exit(DialerContext *ctx) {};
 	virtual void render(DialerContext *ctx) {};
@@ -73,6 +74,20 @@ public:
 private:
 	EyeMovement prev_movement;
 	int points;
+};
+
+class PhoneCallState : public State
+{
+public:
+	PhoneCallState();
+	~PhoneCallState();
+	virtual void enter(DialerContext *ctx);
+	virtual void render(DialerContext *ctx);
+	virtual void tick(DialerContext *ctx);
+private:
+	int ticks;
+	Sound sound_phone;
+	Mat avatar;
 };
 
 // TODO: extract common base case with InputState
@@ -399,9 +414,51 @@ void ConfirmState::commitChoice(DialerContext *ctx)
 	sound_select.play();
 	const string choice = ctx->currentChoice();
 	if (choice == "Yes") {
-		// make phone call
+		ctx->setState(new PhoneCallState);
+	} else {
+		ctx->setState(new WaitState);
 	}
-	ctx->setState(new WaitState);
+}
+
+// }}}
+
+// PhoneCallState {{{
+
+PhoneCallState::PhoneCallState() : ticks(0), sound_phone("phone-call.ogg")
+{
+	avatar = imread("avatar.png", CV_LOAD_IMAGE_COLOR);
+}
+
+PhoneCallState::~PhoneCallState()
+{
+}
+
+void PhoneCallState::enter(DialerContext *ctx)
+{
+	ticks = 10 * ticks_per_seconds;
+	sound_phone.play();
+}
+
+void PhoneCallState::render(DialerContext *ctx)
+{
+	// display avatar
+	const int avatar_width = avatar.cols, avatar_height = avatar.rows;
+	const int avatar_left = window_width / 2 - avatar_width / 2;
+	const int avatar_top = window_height / 2 - avatar_height / 2;
+	Rect region(avatar_left, avatar_top, avatar_width, avatar_height);
+	avatar.copyTo(ctx->canvas(region));
+
+	// display phone number
+	const string& number = ctx->input;
+	ctx->drawTextCentered(number,
+			window_width / 2, avatar_top + avatar_height + 50,
+			CV_RGB(255, 255, 255));
+}
+
+void PhoneCallState::tick(DialerContext *ctx)
+{
+	if (--ticks == 0)
+		ctx->setState(new WaitState);
 }
 
 // }}}
