@@ -41,22 +41,20 @@ class DialerContext;
 class State
 {
 public:
-	virtual void enter(DialerContext *ctx) = 0;
-	virtual void exit(DialerContext *ctx) = 0;
-	virtual void render(DialerContext *ctx) = 0;
-	virtual void eyeMovement(DialerContext *ctx, EyeMovement movement) = 0;
-	virtual void tick(DialerContext *ctx) = 0;
-	virtual void commitChoice(DialerContext *ctx) = 0;
+	virtual void enter(DialerContext *ctx) {};
+	virtual void exit(DialerContext *ctx) {};
+	virtual void render(DialerContext *ctx) {};
+	virtual void eyeMovement(DialerContext *ctx, EyeMovement movement) {};
+	virtual void tick(DialerContext *ctx) {};
+	virtual void commitChoice(DialerContext *ctx) {};
 };
 
 class InputState : public State
 {
 public:
 	virtual void enter(DialerContext *ctx);
-	virtual void exit(DialerContext *ctx);
 	virtual void render(DialerContext *ctx);
 	virtual void eyeMovement(DialerContext *ctx, EyeMovement movement);
-	virtual void tick(DialerContext *ctx);
 	virtual void commitChoice(DialerContext *ctx);
 };
 
@@ -259,10 +257,6 @@ void InputState::enter(DialerContext *ctx)
 	ctx->setChoices(choices);
 }
 
-void InputState::exit(DialerContext *ctx)
-{
-}
-
 void InputState::render(DialerContext *ctx)
 {
 	ctx->drawText(ctx->input, 100, 100, CV_RGB(255, 0, 0));
@@ -280,10 +274,6 @@ void InputState::eyeMovement(DialerContext *ctx, EyeMovement movement)
 	if (movement != CENTER) {
 		ctx->countdown = countdown_ticks;
 	}
-}
-
-void InputState::tick(DialerContext *ctx)
-{
 }
 
 void InputState::commitChoice(DialerContext *ctx)
