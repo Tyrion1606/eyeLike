@@ -6,6 +6,7 @@
 #include <string>
 #include <sstream>
 #include <deque>
+#include <cassert>
 
 using namespace std;
 using namespace cv;
@@ -35,7 +36,27 @@ enum EyeMovement
 	RIGHT = 2,
 };
 
-class State;
+class DialerContext;
+
+class State
+{
+public:
+	virtual void enter(DialerContext *ctx) = 0;
+	virtual void exit(DialerContext *ctx) = 0;
+	virtual void render(DialerContext *ctx) = 0;
+	virtual void eyeMovement(DialerContext *ctx, EyeMovement movement) = 0;
+	virtual void tick(DialerContext *ctx) = 0;
+};
+
+class InputState : public State
+{
+public:
+	virtual void enter(DialerContext *ctx);
+	virtual void exit(DialerContext *ctx);
+	virtual void render(DialerContext *ctx);
+	virtual void eyeMovement(DialerContext *ctx, EyeMovement movement);
+	virtual void tick(DialerContext *ctx);
+};
 
 class DialerContext
 {
@@ -43,6 +64,7 @@ public:
 	string input;
 	Mat canvas;
 	int started;
+	State *state;
 	int current_choice_index;
 	vector<string> choices;
 	deque<float> position_history;
@@ -50,14 +72,30 @@ public:
 	int countdown;
 
 	DialerContext() : canvas(Mat::zeros(window_height, window_width, CV_8UC3)),
-		started(true), current_choice_index(0), wait_ticks(0),
+		started(true), state(NULL), current_choice_index(0), wait_ticks(0),
 		countdown(countdown_ticks)
 	{
-		// chocies: 0~9
-		for (int i = 0; i <= 9; i++)
-			choices.push_back(str(i));
-		// delete backward
-		choices.push_back("Del");
+		setState(new InputState);
+		assert(state != NULL);
+	}
+
+	~DialerContext()
+	{
+		delete state;
+	}
+
+	void setState(State *new_state)
+	{
+		assert(new_state != NULL);
+		if (new_state == state)
+			return;
+
+		if (state)
+			state->exit(this);
+		new_state->enter(this);
+
+		delete state;
+		state = new_state;
 	}
 
 	void setChoices(const vector<string>& new_choices)
@@ -117,11 +155,7 @@ public:
 
 	void drawAll() {
 		clear();
-		if (started) {
-			drawText(input, 100, 100, CV_RGB(255, 0, 0));
-			drawChoices();
-			drawCountdown();
-		}
+		state->render(this);
 		show();
 	}
 
@@ -164,37 +198,16 @@ public:
 		}
 
 		float diff = getMovingAverage() - 0.5;
-		int movement = 0;
+		EyeMovement movement = CENTER;
 		if (diff < -0.06)
-			movement = -1;
+			movement = LEFT;
 		else if (diff > 0.06)
-			movement = 1;
+			movement = RIGHT;
 
-		eyeMovememnt(movement);
-	}
+		state->eyeMovement(this, movement);
 
-	void eyeMovememnt(int movement)
-	{
-		if (started) {
-			if (movement < 0)
-				selectPrev();
-			else if (movement > 0)
-				selectNext();
-			if (movement != 0) {
-				wait_ticks = debounce_delay_ticks;
-				countdown = countdown_ticks;
-			}
-		}
-	}
-
-	void checkCountdown()
-	{
-		if (countdown > 0)
-			countdown--;
-		else {
-			countdown = countdown_ticks;
-			commitChoice();
-		}
+		if (movement != CENTER)
+			wait_ticks = debounce_delay_ticks;
 	}
 
 	void commitChoice()
@@ -211,33 +224,13 @@ public:
 	void tick()
 	{
 		drawAll();
-		if (started) {
-			detectEyeMovement();
-			checkCountdown();
-		}
+		detectEyeMovement();
+		state->tick(this);
 	}
 
 };
 
-class State
-{
-public:
-	virtual void enter(DialerContext *ctx) = 0;
-	virtual void exit(DialerContext *ctx) = 0;
-	virtual void render(DialerContext *ctx) = 0;
-	virtual void eyeMovement(DialerContext *ctx, EyeMovement movement) = 0;
-};
-
 // InputState {{{
-
-class InputState : public State
-{
-public:
-	virtual void enter(DialerContext *ctx);
-	virtual void exit(DialerContext *ctx);
-	virtual void render(DialerContext *ctx);
-	virtual void eyeMovement(DialerContext *ctx, EyeMovement movement);
-};
 
 void InputState::enter(DialerContext *ctx)
 {
@@ -272,6 +265,16 @@ void InputState::eyeMovement(DialerContext *ctx, EyeMovement movement)
 
 	if (movement != CENTER) {
 		ctx->countdown = countdown_ticks;
+	}
+}
+
+void InputState::tick(DialerContext *ctx)
+{
+	if (ctx->countdown > 0)
+		ctx->countdown--;
+	else {
+		ctx->countdown = countdown_ticks;
+		ctx->commitChoice();
 	}
 }
 
