@@ -21,6 +21,7 @@ const int ticks_per_seconds = 25;
 const int debounce_delay_ticks = 10;
 const int countdown_ticks = 74;
 const float eye_movement_threashold = 0.06;
+const int choices_gap_size = 150;
 
 // convert integer to string
 string str(int n)
@@ -182,9 +183,9 @@ public:
 		const string prev_choice = choices[prevChoiceIndex()];
 		const string next_choices = choices[nextChoiceIndex()];
 
-		drawTextCentered(prev_choice, center_x - 150, center_y,
+		drawTextCentered(prev_choice, center_x - choices_gap_size, center_y,
 				CV_RGB(255, 0, 0), 1.5);
-		drawTextCentered(next_choices, center_x + 150, center_y,
+		drawTextCentered(next_choices, center_x + choices_gap_size, center_y,
 				CV_RGB(255, 0, 0), 1.5);
 	}
 
