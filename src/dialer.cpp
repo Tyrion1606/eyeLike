@@ -148,7 +148,7 @@ public:
 
 	void clear()
 	{
-		canvas = CV_RGB(0, 0, 0);
+		canvas = CV_RGB(2, 23, 40);
 	}
 
 	void drawText(const string& s, int x, int y, Scalar color, double scale = 1.0)
