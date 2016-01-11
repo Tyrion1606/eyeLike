@@ -63,7 +63,6 @@ class DialerContext
 public:
 	string input;
 	Mat canvas;
-	int started;
 	State *state;
 	int current_choice_index;
 	vector<string> choices;
@@ -72,7 +71,7 @@ public:
 	int countdown;
 
 	DialerContext() : canvas(Mat::zeros(window_height, window_width, CV_8UC3)),
-		started(true), state(NULL), current_choice_index(0), wait_ticks(0),
+		state(NULL), current_choice_index(0), wait_ticks(0),
 		countdown(countdown_ticks)
 	{
 		setState(new InputState);
