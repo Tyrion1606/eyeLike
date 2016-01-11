@@ -28,7 +28,7 @@ string str(int n)
 }
 }
 
-class Dialer::Private
+class Dialer::Context
 {
 public:
 	string input;
@@ -40,7 +40,7 @@ public:
 	int wait_ticks;
 	int countdown;
 
-	Private() : canvas(Mat::zeros(window_height, window_width, CV_8UC3)),
+	Context() : canvas(Mat::zeros(window_height, window_width, CV_8UC3)),
 		started(true), current_choice_index(0), wait_ticks(0),
 		countdown(countdown_ticks)
 	{
@@ -205,13 +205,13 @@ public:
 
 };
 
-Dialer::Dialer() : p(new Private)
+Dialer::Dialer() : ctx(new Context)
 {
 }
 
 Dialer::~Dialer()
 {
-	delete p;
+	delete ctx;
 }
 
 void Dialer::start()
@@ -231,17 +231,17 @@ void Dialer::keypress(int key)
 	switch (key)
 	{
 		case 'h':
-			p->selectNext();
+			ctx->selectNext();
 			break;
 		case 'l':
-			p->selectPrev();
+			ctx->selectPrev();
 			break;
 	}
 }
 
 void Dialer::tick()
 {
-	p->tick();
+	ctx->tick();
 }
 
 void Dialer::updatePupilPosition(float pupil_left_x, float pupil_left_y,
@@ -249,7 +249,7 @@ void Dialer::updatePupilPosition(float pupil_left_x, float pupil_left_y,
 {
 	const float position = (pupil_left_x + pupil_right_x) / 2;
 	cout << position << endl;
-	p->position_history.push_back(position);
-	while (p->position_history.size() > moving_average_size)
-		p->position_history.pop_front();
+	ctx->position_history.push_back(position);
+	while (ctx->position_history.size() > moving_average_size)
+		ctx->position_history.pop_front();
 }

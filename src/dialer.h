@@ -28,9 +28,8 @@ private:
 	Dialer(const Dialer&);
 	Dialer& operator=(const Dialer&);
 
-	class Private;
-	Private *p;
-
+	class Context;
+	Context *ctx;
 };
 
 #endif /* _DIALER_H_ */
