@@ -7,6 +7,7 @@ public:
 	explicit Sound(const char *filename);
 
 	void play() const;
+	void playAndWait() const;
 
 private:
 	const char *filename_;
