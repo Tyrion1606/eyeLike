@@ -174,19 +174,30 @@ public:
 	void drawChoices()
 	{
 		const int center_x = window_width / 2, center_y = window_height / 2;
+		bool is_moving = (movement != CENTER);
+		int offset = is_moving ? (movingProgress() * choices_gap_size) : 0;
+
+		if (movement == LEFT)
+			offset = -offset;
 
 		// draw the current choice at the center
-		drawTextCentered(currentChoice(), center_x, center_y,
-				CV_RGB(255, 0, 0), 2.5);
+		drawTextCentered(currentChoice(), center_x + offset, center_y,
+				CV_RGB(255, 0, 0), is_moving ? 1.5 : 2.5);
 
-		// draw the previous and next choices
-		const string prev_choice = choices[prevChoiceIndex()];
-		const string next_choices = choices[nextChoiceIndex()];
+		// draw the previous and next N choices
+		for (int i = 1; i <= 3; i++) {
+			int next_index = (current_choice_index + i) % choices.size();
+			int prev_index = (current_choice_index + choices.size() - i) % choices.size();
+			const string next_choice = choices[next_index];
+			const string prev_choice = choices[prev_index];
 
-		drawTextCentered(prev_choice, center_x - choices_gap_size, center_y,
-				CV_RGB(255, 0, 0), 1.5);
-		drawTextCentered(next_choices, center_x + choices_gap_size, center_y,
-				CV_RGB(255, 0, 0), 1.5);
+			drawTextCentered(prev_choice, center_x - i * choices_gap_size + offset,
+					center_y,
+					CV_RGB(255, 0, 0), 1.5);
+			drawTextCentered(next_choice, center_x + i * choices_gap_size + offset,
+					center_y,
+					CV_RGB(255, 0, 0), 1.5);
+		}
 	}
 
 	void drawCountdown() {
@@ -258,6 +269,12 @@ public:
 
 		if (movement != CENTER)
 			wait_ticks = debounce_delay_ticks;
+	}
+
+	float movingProgress()
+	{
+		// fraction of the completed moving progress
+		return (float)wait_ticks / debounce_delay_ticks;
 	}
 
 	// append s to input
