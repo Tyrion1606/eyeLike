@@ -123,6 +123,7 @@ public:
 
 	~DialerContext()
 	{
+		state->exit(this);
 		delete state;
 	}
 
