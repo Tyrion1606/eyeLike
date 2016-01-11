@@ -373,6 +373,7 @@ void WaitState::eyeMovement(DialerContext *ctx, EyeMovement movement)
 		points += 1.5 * ticks_per_seconds;
 
 	if (points >= ticks_per_seconds * 5) {
+		Sound("select.ogg").play();
 		ctx->setState(new InputState);
 		return;
 	}
