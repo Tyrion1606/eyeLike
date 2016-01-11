@@ -211,20 +211,33 @@ public:
 			wait_ticks = debounce_delay_ticks;
 	}
 
-	void commitChoice()
+	// append s to input
+	void inputPush(const string& s)
 	{
-		const string& choice = currentChoice();
-		if (choice == "Del") {
-			if (!input.empty())
-				input.erase(input.size() - 1); // remove the last character
-		} else {
-			input += currentChoice();
+		input += s;
+	}
+
+	// remove the last character from input
+	void inputPop()
+	{
+		if (!input.empty())
+			input.erase(input.size() - 1); // remove the last character
+	}
+
+	void checkCountdown()
+	{
+		if (countdown > 0)
+			countdown--;
+		else {
+			countdown = countdown_ticks;
+			state->commitChoice(this);
 		}
 	}
 
 	void tick()
 	{
 		drawAll();
+		checkCountdown();
 		detectEyeMovement();
 		state->tick(this);
 	}
@@ -271,16 +284,15 @@ void InputState::eyeMovement(DialerContext *ctx, EyeMovement movement)
 
 void InputState::tick(DialerContext *ctx)
 {
-	if (ctx->countdown > 0)
-		ctx->countdown--;
-	else {
-		ctx->countdown = countdown_ticks;
-		ctx->commitChoice();
-	}
 }
 
 void InputState::commitChoice(DialerContext *ctx)
 {
+	const string& choice = ctx->currentChoice();
+	if (choice == "Del")
+		ctx->inputPop();
+	else
+		ctx->inputPush(choice);
 }
 
 // }}}
