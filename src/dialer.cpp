@@ -16,9 +16,9 @@ namespace {
 const int window_width = 800;
 const int window_height = 600;
 const char *dialer_window_name = "dialer";
-const int moving_average_size = 5;
+const int moving_average_size = 3;
 const int ticks_per_seconds = 25;
-const int debounce_delay_ticks = 10;
+const int debounce_delay_ticks = 8;
 const int countdown_ticks = 74;
 const float eye_movement_threashold = 0.06;
 const int choices_gap_size = 150;
