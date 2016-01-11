@@ -182,9 +182,9 @@ public:
 		const string prev_choice = choices[prevChoiceIndex()];
 		const string next_choices = choices[nextChoiceIndex()];
 
-		drawTextCentered(prev_choice, center_x - 100, center_y,
+		drawTextCentered(prev_choice, center_x - 150, center_y,
 				CV_RGB(255, 0, 0), 1.5);
-		drawTextCentered(next_choices, center_x + 100, center_y,
+		drawTextCentered(next_choices, center_x + 150, center_y,
 				CV_RGB(255, 0, 0), 1.5);
 	}
 
