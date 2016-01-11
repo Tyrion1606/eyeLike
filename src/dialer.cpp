@@ -395,6 +395,7 @@ void ConfirmState::enter(DialerContext *ctx)
 	vector<string> choices;
 	choices.push_back("No");
 	choices.push_back("Yes");
+	choices.push_back("Back");
 	ctx->setChoices(choices);
 }
 
@@ -415,6 +416,8 @@ void ConfirmState::commitChoice(DialerContext *ctx)
 	const string choice = ctx->currentChoice();
 	if (choice == "Yes") {
 		ctx->setState(new PhoneCallState);
+	} else if (choice == "Back") {
+		ctx->setState(new InputState);
 	} else {
 		ctx->setState(new WaitState);
 	}
