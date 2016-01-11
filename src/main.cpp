@@ -3,8 +3,6 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/opencv.hpp>
 
-#include <pthread.h>
-
 #include <iostream>
 #include <queue>
 #include <stdio.h>
@@ -38,7 +36,6 @@ Dialer dialer;
 int pupil_position_stack[4][5];
 int pupil_smooth_position[4];
 int pupil_stack_count = 0;
-pthread_t tid[2];
 float eye_p[2];
 int mouse_click;
 float eyetracking_position[8];
@@ -59,10 +56,6 @@ int main( int argc, const char** argv ) {
 	ThreadArgs* arg_struct = (ThreadArgs* ) malloc(sizeof(ThreadArgs));
 	arg_struct->argc = argc;
 	arg_struct->argv = argv;
-
-	//err =	pthread_create(&tid[0],NULL,&thread_gui,(void *) arg_struct);
-	//if (err!=0)
-	//	printf("pthread faild");
 
 	//  CvCapture* capture;
 	cv::Mat frame;
