@@ -28,7 +28,7 @@ string str(int n)
 }
 }
 
-class Dialer::Context
+class DialerContext
 {
 public:
 	string input;
@@ -40,7 +40,7 @@ public:
 	int wait_ticks;
 	int countdown;
 
-	Context() : canvas(Mat::zeros(window_height, window_width, CV_8UC3)),
+	DialerContext() : canvas(Mat::zeros(window_height, window_width, CV_8UC3)),
 		started(true), current_choice_index(0), wait_ticks(0),
 		countdown(countdown_ticks)
 	{
@@ -205,7 +205,7 @@ public:
 
 };
 
-Dialer::Dialer() : ctx(new Context)
+Dialer::Dialer() : ctx(new DialerContext)
 {
 }
 

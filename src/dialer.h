@@ -1,6 +1,8 @@
 #ifndef _DIALER_H_
 #define _DIALER_H_
 
+class DialerContext;
+
 class Dialer
 {
 public:
@@ -28,8 +30,7 @@ private:
 	Dialer(const Dialer&);
 	Dialer& operator=(const Dialer&);
 
-	class Context;
-	Context *ctx;
+	DialerContext *ctx;
 };
 
 #endif /* _DIALER_H_ */
