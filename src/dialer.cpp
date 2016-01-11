@@ -179,9 +179,17 @@ public:
 				CV_RGB(0, 255, 0), 1.5);
 	}
 
+	void drawEyePositionIndicator()
+	{
+		float diff = getMovingAverage() - 0.5;
+		int x = window_width * (diff + eye_movement_threashold) / (2*eye_movement_threashold);
+		line(canvas, Point(x, 0), Point(x, 10), CV_RGB(255, 255, 255), 5);
+	}
+
 	void drawAll() {
 		clear();
 		state->render(this);
+		drawEyePositionIndicator();
 		show();
 	}
 
