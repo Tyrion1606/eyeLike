@@ -46,6 +46,7 @@ public:
 	virtual void render(DialerContext *ctx) = 0;
 	virtual void eyeMovement(DialerContext *ctx, EyeMovement movement) = 0;
 	virtual void tick(DialerContext *ctx) = 0;
+	virtual void commitChoice(DialerContext *ctx) = 0;
 };
 
 class InputState : public State
@@ -56,6 +57,7 @@ public:
 	virtual void render(DialerContext *ctx);
 	virtual void eyeMovement(DialerContext *ctx, EyeMovement movement);
 	virtual void tick(DialerContext *ctx);
+	virtual void commitChoice(DialerContext *ctx);
 };
 
 class DialerContext
@@ -275,6 +277,10 @@ void InputState::tick(DialerContext *ctx)
 		ctx->countdown = countdown_ticks;
 		ctx->commitChoice();
 	}
+}
+
+void InputState::commitChoice(DialerContext *ctx)
+{
 }
 
 // }}}
