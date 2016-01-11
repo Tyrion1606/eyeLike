@@ -113,6 +113,7 @@ public:
 	void setChoices(const vector<string>& new_choices)
 	{
 		choices = new_choices;
+		current_choice_index = 0;
 	}
 
 	void clear()
