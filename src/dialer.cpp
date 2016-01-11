@@ -137,7 +137,6 @@ public:
 				CV_RGB(255, 0, 0), 2.5);
 
 		// draw the previous and next choices
-		// TODO: extract the transition functions
 		const string prev_choice = choices[prevChoiceIndex()];
 		const string next_choices = choices[nextChoiceIndex()];
 
