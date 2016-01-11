@@ -20,6 +20,7 @@ const int moving_average_size = 5;
 const int ticks_per_seconds = 25;
 const int debounce_delay_ticks = 10;
 const int countdown_ticks = 74;
+const float eye_movement_threashold = 0.06;
 
 // convert integer to string
 string str(int n)
@@ -224,9 +225,9 @@ public:
 
 		float diff = getMovingAverage() - 0.5;
 		movement = CENTER;
-		if (diff < -0.06)
+		if (diff < -eye_movement_threashold)
 			movement = LEFT;
-		else if (diff > 0.06)
+		else if (diff > eye_movement_threashold)
 			movement = RIGHT;
 
 		state->eyeMovement(this, movement);
