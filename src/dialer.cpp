@@ -69,6 +69,7 @@ public:
 	deque<float> position_history;
 	int wait_ticks;
 	int countdown;
+	EyeMovement movement;
 
 	DialerContext() : canvas(Mat::zeros(window_height, window_width, CV_8UC3)),
 		state(NULL), current_choice_index(0), wait_ticks(0),
@@ -197,7 +198,7 @@ public:
 		}
 
 		float diff = getMovingAverage() - 0.5;
-		EyeMovement movement = CENTER;
+		movement = CENTER;
 		if (diff < -0.06)
 			movement = LEFT;
 		else if (diff > 0.06)
