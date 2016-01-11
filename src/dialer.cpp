@@ -58,6 +58,18 @@ public:
 	virtual void commitChoice(DialerContext *ctx);
 };
 
+class WaitState : public State
+{
+public:
+	virtual void enter(DialerContext *ctx);
+	virtual void render(DialerContext *ctx);
+	virtual void eyeMovement(DialerContext *ctx, EyeMovement movement);
+	virtual void tick(DialerContext *ctx);
+private:
+	EyeMovement prev_movement;
+	int points;
+};
+
 class DialerContext
 {
 public:
@@ -75,7 +87,7 @@ public:
 		state(NULL), current_choice_index(0), wait_ticks(0),
 		countdown(countdown_ticks)
 	{
-		setState(new InputState);
+		setState(new WaitState);
 		assert(state != NULL);
 	}
 
@@ -283,6 +295,46 @@ void InputState::commitChoice(DialerContext *ctx)
 		ctx->inputPop();
 	else
 		ctx->inputPush(choice);
+}
+
+// }}}
+
+// WaitState {{{
+
+void WaitState::enter(DialerContext *ctx)
+{
+	prev_movement = CENTER;
+	points = 0;
+}
+
+void WaitState::render(DialerContext *ctx)
+{
+	ctx->drawTextCentered("Quickly look left and right 5 times to start",
+			window_width/2, window_height/2,
+			CV_RGB(255, 255, 255));
+}
+
+void WaitState::eyeMovement(DialerContext *ctx, EyeMovement movement)
+{
+	// We are only interested in left and right in this state.
+	if (movement == CENTER)
+		return;
+
+	if (prev_movement != movement) // transition from left to right or vice versa
+		points += 1.5 * ticks_per_seconds;
+
+	if (points >= ticks_per_seconds * 5) {
+		ctx->setState(new InputState);
+		return;
+	}
+
+	prev_movement = movement;
+}
+
+void WaitState::tick(DialerContext *ctx)
+{
+	if (points > 0)
+		points--;
 }
 
 // }}}
