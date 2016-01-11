@@ -30,47 +30,12 @@ string str(int n)
 
 enum EyeMovement
 {
-	LEFT = 0,
-	RIGHT = 1,
+	CENTER = 0,
+	LEFT = 1,
+	RIGHT = 2,
 };
 
-class State
-{
-public:
-	virtual void enter(DialerContext *ctx) = 0;
-	virtual void exit(DialerContext *ctx) = 0;
-	virtual void render(DialerContext *ctx) = 0;
-	virtual void eyeMovement(EyeMovement movement) = 0;
-};
-
-// InputState {{{
-
-class InputState : public State
-{
-public:
-	virtual void enter(DialerContext *ctx);
-	virtual void exit(DialerContext *ctx);
-	virtual void render(DialerContext *ctx);
-	virtual void eyeMovement(EyeMovement movement);
-};
-
-void InputState::enter(DialerContext *ctx)
-{
-}
-
-void InputState::exit(DialerContext *ctx)
-{
-}
-
-void InputState::render(DialerContext *ctx)
-{
-}
-
-void InputState::eyeMovement(EyeMovement movement)
-{
-}
-
-// }}}
+class State;
 
 class DialerContext
 {
@@ -93,6 +58,11 @@ public:
 			choices.push_back(str(i));
 		// delete backward
 		choices.push_back("Del");
+	}
+
+	void setChoices(const vector<string>& new_choices)
+	{
+		choices = new_choices;
 	}
 
 	void clear()
@@ -248,6 +218,64 @@ public:
 	}
 
 };
+
+class State
+{
+public:
+	virtual void enter(DialerContext *ctx) = 0;
+	virtual void exit(DialerContext *ctx) = 0;
+	virtual void render(DialerContext *ctx) = 0;
+	virtual void eyeMovement(DialerContext *ctx, EyeMovement movement) = 0;
+};
+
+// InputState {{{
+
+class InputState : public State
+{
+public:
+	virtual void enter(DialerContext *ctx);
+	virtual void exit(DialerContext *ctx);
+	virtual void render(DialerContext *ctx);
+	virtual void eyeMovement(DialerContext *ctx, EyeMovement movement);
+};
+
+void InputState::enter(DialerContext *ctx)
+{
+	vector<string> choices;
+
+	// chocies: 0~9
+	for (int i = 0; i <= 9; i++)
+		choices.push_back(str(i));
+	// delete backward
+	choices.push_back("Del");
+
+	ctx->setChoices(choices);
+}
+
+void InputState::exit(DialerContext *ctx)
+{
+}
+
+void InputState::render(DialerContext *ctx)
+{
+	ctx->drawText(ctx->input, 100, 100, CV_RGB(255, 0, 0));
+	ctx->drawChoices();
+	ctx->drawCountdown();
+}
+
+void InputState::eyeMovement(DialerContext *ctx, EyeMovement movement)
+{
+	if (movement == LEFT)
+		ctx->selectPrev();
+	else if (movement == RIGHT)
+		ctx->selectNext();
+
+	if (movement != CENTER) {
+		ctx->countdown = countdown_ticks;
+	}
+}
+
+// }}}
 
 Dialer::Dialer() : ctx(new DialerContext)
 {
