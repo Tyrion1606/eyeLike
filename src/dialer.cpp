@@ -7,6 +7,7 @@
 #include <sstream>
 #include <deque>
 #include <cassert>
+#include "sound.h"
 
 using namespace std;
 using namespace cv;
@@ -52,10 +53,13 @@ public:
 class InputState : public State
 {
 public:
+	InputState();
 	virtual void enter(DialerContext *ctx);
 	virtual void render(DialerContext *ctx);
 	virtual void eyeMovement(DialerContext *ctx, EyeMovement movement);
 	virtual void commitChoice(DialerContext *ctx);
+protected:
+	Sound sound_select, sound_change;
 };
 
 class WaitState : public State
@@ -266,6 +270,11 @@ public:
 
 // InputState {{{
 
+InputState::InputState()
+	: sound_select("select.ogg"), sound_change("change.ogg")
+{
+}
+
 void InputState::enter(DialerContext *ctx)
 {
 	vector<string> choices;
@@ -296,11 +305,14 @@ void InputState::eyeMovement(DialerContext *ctx, EyeMovement movement)
 
 	if (movement != CENTER) {
 		ctx->countdown = countdown_ticks;
+		sound_change.play();
 	}
 }
 
 void InputState::commitChoice(DialerContext *ctx)
 {
+	sound_select.play();
+
 	const string& choice = ctx->currentChoice();
 	if (choice == "Del")
 		ctx->inputPop();
@@ -375,6 +387,7 @@ void ConfirmState::render(DialerContext *ctx)
 
 void ConfirmState::commitChoice(DialerContext *ctx)
 {
+	sound_select.play();
 	const string choice = ctx->currentChoice();
 	if (choice == "Yes") {
 		// make phone call
