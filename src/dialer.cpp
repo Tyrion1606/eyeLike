@@ -427,7 +427,6 @@ void Dialer::updatePupilPosition(float pupil_left_x, float pupil_left_y,
 		float pupil_right_x, float pupil_right_y)
 {
 	const float position = (pupil_left_x + pupil_right_x) / 2;
-	cout << position << endl;
 	ctx->position_history.push_back(position);
 	while (ctx->position_history.size() > moving_average_size)
 		ctx->position_history.pop_front();
