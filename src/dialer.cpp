@@ -70,6 +70,15 @@ private:
 	int points;
 };
 
+// TODO: extract common base case with InputState
+class ConfirmState : public InputState
+{
+public:
+	virtual void enter(DialerContext *ctx);
+	virtual void render(DialerContext *ctx);
+	virtual void commitChoice(DialerContext *ctx);
+};
+
 class DialerContext
 {
 public:
@@ -266,6 +275,7 @@ void InputState::enter(DialerContext *ctx)
 		choices.push_back(str(i));
 	// delete backward
 	choices.push_back("Del");
+	choices.push_back("Call");
 
 	ctx->setChoices(choices);
 }
@@ -294,6 +304,8 @@ void InputState::commitChoice(DialerContext *ctx)
 	const string& choice = ctx->currentChoice();
 	if (choice == "Del")
 		ctx->inputPop();
+	else if (choice == "Call")
+		ctx->setState(new ConfirmState);
 	else
 		ctx->inputPush(choice);
 }
@@ -336,6 +348,38 @@ void WaitState::tick(DialerContext *ctx)
 {
 	if (points > 0)
 		points--;
+}
+
+// }}}
+
+// ConfirmState {{{
+
+void ConfirmState::enter(DialerContext *ctx)
+{
+	vector<string> choices;
+	choices.push_back("No");
+	choices.push_back("Yes");
+	ctx->setChoices(choices);
+}
+
+void ConfirmState::render(DialerContext *ctx)
+{
+	string msg("Do you want to call ");
+	msg += ctx->input;
+
+	ctx->drawTextCentered(msg, window_width/2, window_height/2 + 100,
+			CV_RGB(255, 255, 0));
+	ctx->drawChoices();
+	ctx->drawCountdown();
+}
+
+void ConfirmState::commitChoice(DialerContext *ctx)
+{
+	const string choice = ctx->currentChoice();
+	if (choice == "Yes") {
+		// make phone call
+	}
+	ctx->setState(new WaitState);
 }
 
 // }}}
