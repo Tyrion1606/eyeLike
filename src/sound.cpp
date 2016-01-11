@@ -9,7 +9,7 @@ using namespace std;
 
 namespace
 {
-	void mplayer(const char *filename, bool blocking)
+	void mplayer(const char *filename)
 	{
 		int pid = fork();
 		if (pid == 0) {
@@ -26,8 +26,6 @@ namespace
 			cerr << "error: failed to execute mplayer" << endl;
 			exit(1);
 		}
-		if (blocking)
-			waitpid(pid, NULL, 0);
 	}
 }
 
@@ -37,10 +35,5 @@ Sound::Sound(const char *filename) : filename_(filename)
 
 void Sound::play() const
 {
-	mplayer(filename_, false);
-}
-
-void Sound::playAndWait() const
-{
-	mplayer(filename_, true);
+	mplayer(filename_);
 }
