@@ -373,6 +373,7 @@ void WaitState::enter(DialerContext *ctx)
 {
 	prev_movement = CENTER;
 	points = 0;
+	ctx->input.clear();
 }
 
 void WaitState::render(DialerContext *ctx)
