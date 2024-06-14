@@ -2,6 +2,9 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/opencv.hpp>
+#include <opencv2/imgcodecs.hpp> // For CV_LOAD_IMAGE_COLOR
+#include <opencv2/highgui.hpp>   // For CV_WINDOW_NORMAL
+#include <vector>
 
 #include <iostream>
 #include <queue>
@@ -67,10 +70,10 @@ int main( int argc, const char** argv ) {
 		return -1;
 	};
 
-	cv::namedWindow(main_window_name,CV_WINDOW_NORMAL);
+	cv::namedWindow(main_window_name,cv::WINDOW_NORMAL);
 	cv::moveWindow(main_window_name, 800, 0);
 	cv::resizeWindow(main_window_name, 400, 300);
-	cv::namedWindow(face_window_name,CV_WINDOW_NORMAL);
+	cv::namedWindow(face_window_name,cv::WINDOW_NORMAL);
 	cv::moveWindow(face_window_name, 800, 300);
 	cv::resizeWindow(face_window_name, 400, 300);
 	//cv::namedWindow("Right Eye",CV_WINDOW_NORMAL);
@@ -256,7 +259,7 @@ cv::Mat findSkin (cv::Mat &frame) {
 	cv::Mat input;
 	cv::Mat output = cv::Mat(frame.rows,frame.cols, CV_8U);
 
-	cvtColor(frame, input, CV_BGR2YCrCb);
+	cvtColor(frame, input, cv::COLOR_BGR2YCrCb);
 
 	for (int y = 0; y < input.rows; ++y) {
 		const cv::Vec3b *Mr = input.ptr<cv::Vec3b>(y);
@@ -286,9 +289,10 @@ void detectAndDisplay( cv::Mat frame ) {
 	//equalizeHist( frame_gray, frame_gray );
 	//cv::pow(frame_gray, CV_64F, frame_gray);
 	//-- Detect faces
-	face_cascade.detectMultiScale( frame_gray, faces,
-			1.1, 2, 0|CV_HAAR_SCALE_IMAGE|CV_HAAR_FIND_BIGGEST_OBJECT,
-			cv::Size(150, 150) );
+	face_cascade.detectMultiScale(frame_gray, faces,
+			1.1, 2, 0 | cv::CASCADE_SCALE_IMAGE | cv::CASCADE_FIND_BIGGEST_OBJECT,
+			cv::Size(150, 150));
+
 	//  findSkin(debugImage);
 
 	for( int i = 0; i < faces.size(); i++ )

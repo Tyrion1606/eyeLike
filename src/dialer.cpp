@@ -3,6 +3,8 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/opencv.hpp>
+#include <opencv2/highgui.hpp> // For CV_WINDOW_NORMAL
+
 #include <string>
 #include <sstream>
 #include <deque>
@@ -450,7 +452,7 @@ void ConfirmState::commitChoice(DialerContext *ctx)
 
 PhoneCallState::PhoneCallState() : ticks(0), sound_phone("phone-call.ogg")
 {
-	avatar = imread("avatar.png", CV_LOAD_IMAGE_COLOR);
+	avatar = imread("avatar.png", cv::IMREAD_COLOR);
 }
 
 PhoneCallState::~PhoneCallState()
@@ -498,7 +500,7 @@ Dialer::~Dialer()
 
 void Dialer::start()
 {
-	namedWindow(dialer_window_name, CV_WINDOW_NORMAL);
+	namedWindow(dialer_window_name, cv::WINDOW_NORMAL);
 	resizeWindow(dialer_window_name, window_width, window_height);
 	moveWindow(dialer_window_name, 0, 0);
 }
