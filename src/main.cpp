@@ -10,6 +10,10 @@
 #include <queue>
 #include <stdio.h>
 #include <math.h>
+#include <chrono>
+#include <thread>
+#include <deque>
+#include <numeric>
 
 #include "constants.h"
 #include "findEyeCenter.h"
@@ -18,19 +22,28 @@
 #include "dialer.h"
 
 using namespace cv;
+using namespace std;
+using namespace std::chrono;
+
 
 /** Constants **/
 
 /** Function Headers */
 void detectAndDisplay( cv::Mat frame );
+void findPupil( cv::Mat right_eye );
 
 /** Global variables */
 //-- Note, either copy these two files from opencv/data/haarscascades
 //to your current folder, or change these locations
 cv::String face_cascade_name = "../../res/haarcascade_frontalface_alt.xml";
 cv::CascadeClassifier face_cascade;
-std::string main_window_name = "Capture - Face detection";
+
+cv::String eye_cascade_name = "../../res/haarcascade_eye_tree_eyeglasses.xml";
+cv::CascadeClassifier eye_cascade;
+
+std::string main_window_name = "Capture - half face";
 std::string face_window_name = "Capture - Face";
+std::string eye_window_name = "Capture - eye";
 cv::RNG rng(12345);
 cv::Mat debugImage;
 cv::Mat skinCrCbHist = cv::Mat::zeros(cv::Size(256, 256), CV_8UC1);
@@ -50,10 +63,34 @@ typedef struct ThreadArgs {
 	const char** argv;
 } ThreadArgs;
 
+
+
+float fps = 0.0;
+
 /**
  * @function main
  */
 int main( int argc, const char** argv ) {
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 	int err;
 	ThreadArgs* arg_struct = (ThreadArgs* ) malloc(sizeof(ThreadArgs));
@@ -69,58 +106,59 @@ int main( int argc, const char** argv ) {
 		printf("please change face_cascade_name in source code.\n");
 		return -1;
 	};
+	if( !eye_cascade.load( eye_cascade_name ) ){
+		printf("--(!)Error loading face cascade,");
+		printf("please change eye_cascade_name in source code.\n");
+		return -1;
+	};
 
 	cv::namedWindow(main_window_name,cv::WINDOW_NORMAL);
-	cv::moveWindow(main_window_name, 800, 0);
-	cv::resizeWindow(main_window_name, 400, 300);
-	cv::namedWindow(face_window_name,cv::WINDOW_NORMAL);
-	cv::moveWindow(face_window_name, 800, 300);
-	cv::resizeWindow(face_window_name, 400, 300);
-	//cv::namedWindow("Right Eye",CV_WINDOW_NORMAL);
-	//cv::moveWindow("Right Eye", 10, 600);
-	//cv::namedWindow("Left Eye",CV_WINDOW_NORMAL);
-	//cv::moveWindow("Left Eye", 10, 800);
+	cv::moveWindow(main_window_name, 20, 80);
+	cv::resizeWindow(main_window_name, 200, 300);
 
-	dialer.start();
+	// cv::namedWindow(face_window_name,cv::WINDOW_NORMAL);
+	// cv::moveWindow(face_window_name, 200, 0);
+	// cv::resizeWindow(face_window_name, 400, 300);
+
+	// cv::namedWindow(eye_window_name,cv::WINDOW_NORMAL);
+	// cv::moveWindow(eye_window_name, 0, 400);
+	// cv::resizeWindow(eye_window_name, 400, 300);
+
 
 	createCornerKernels();
 	ellipse(skinCrCbHist, cv::Point(113, 155.6), cv::Size(23.4, 15.2),
 			43.0, 0.0, 360.0, cv::Scalar(255, 255, 255), -1);
-	VideoCapture capture(0);
-	// Read the video stream
-	//capture = cvCaptureFromCAM( 1 );
-	if( capture.isOpened() ) {
-		while( true ) {
-			//frame = cvQueryFrame( capture );
-			capture.read(frame);
-			// mirror it
-			cv::flip(frame, frame, 1);
-			frame.copyTo(debugImage);
+	VideoCapture capture(0, cv::CAP_V4L2);
 
-			// Apply the classifier to the frame
-			if( !frame.empty() ) {
+    // Variables to calculate FPS
+    auto start = high_resolution_clock::now();
+    int frame_count = 0;
+    fps = 0.0;
+    float duration = 0.0;
+
+	if( capture.isOpened() ) {
+        capture.read(frame);
+		while( true ) {
+			capture.read(frame);
+
+            frame_count++;
+            if (frame_count >= 30) {
+                auto end = high_resolution_clock::now();
+                duration = duration_cast<milliseconds>(end - start).count();
+                fps = frame_count / (duration / 1000.0f);
+                frame_count = 0;
+                start = high_resolution_clock::now();
+            }
+			cv::flip(frame, frame, 1);
+
+            if( !frame.empty() ) {
 				detectAndDisplay( frame );
 			}
-			else {
-				printf(" --(!) No captured frame -- Break!");
-				break;
-			}
-
-			imshow(main_window_name,debugImage);
-
-			int key = cv::waitKey(10);
-			if (key != -1) { // -1 means no key is pressed
-				if(key == 'q')
-					break;
-				dialer.keypress(key);
-			} else {
-				dialer.tick();
-			}
+			int key = cv::waitKey(1);
 		}
 	}
 
 	releaseCornerKernels();
-	dialer.stop();
 
 	return 0;
 }
@@ -248,10 +286,8 @@ void findEyes(cv::Mat frame_gray, cv::Rect face) {
 		circle(faceROI, rightRightCorner, 3, 200);
 	}
 
-	imshow(face_window_name, faceROI);
-	//  cv::Rect roi( cv::Point( 0, 0 ), faceROI.size());
-	//  cv::Mat destinationROI = debugImage( roi );
-	//  faceROI.copyTo( destinationROI );
+	imshow(main_window_name, faceROI);
+	// imshow(face_window_name, faceROI);
 }
 
 
@@ -274,33 +310,152 @@ cv::Mat findSkin (cv::Mat &frame) {
 	return output;
 }
 
+
+
+// Número de frames para a média móvel
+const int NUM_FRAMES = 5;
+
+// Históricos de detecções
+std::deque<cv::Rect> face_history;
+std::deque<cv::Rect> eye_history;
+std::deque<cv::Vec3i> circle_history;  // Histórico de círculos detectados
+
+
+cv::Rect getAverageRect(const std::deque<cv::Rect>& rects) {
+    int x = 0, y = 0, width = 0, height = 0;
+    for (const auto& rect : rects) {
+        x += rect.x;
+        y += rect.y;
+        width += rect.width;
+        height += rect.height;
+    }
+    int n = rects.size();
+    return cv::Rect(x / n, y / n, width / n, height / n);
+}
+
 /**
  * @function detectAndDisplay
  */
-void detectAndDisplay( cv::Mat frame ) {
-	std::vector<cv::Rect> faces;
-	//cv::Mat frame_gray;
+void detectAndDisplay(cv::Mat frame) {
+    std::vector<cv::Rect> faces;
 
-	std::vector<cv::Mat> rgbChannels(3);
-	cv::split(frame, rgbChannels);
-	cv::Mat frame_gray = rgbChannels[2];
+    std::vector<cv::Mat> rgbChannels(3);
+    cv::split(frame, rgbChannels);
+    cv::Mat frame_gray = rgbChannels[2];
 
-	//cvtColor( frame, frame_gray, CV_BGR2GRAY );
-	//equalizeHist( frame_gray, frame_gray );
-	//cv::pow(frame_gray, CV_64F, frame_gray);
-	//-- Detect faces
-	face_cascade.detectMultiScale(frame_gray, faces,
-			1.1, 2, 0 | cv::CASCADE_SCALE_IMAGE | cv::CASCADE_FIND_BIGGEST_OBJECT,
-			cv::Size(150, 150));
+    //-- Detect faces
+    face_cascade.detectMultiScale(frame_gray, faces,
+        1.3, 2, 0 | cv::CASCADE_SCALE_IMAGE | cv::CASCADE_FIND_BIGGEST_OBJECT,
+        cv::Size(200, 200));
 
-	//  findSkin(debugImage);
+    if (!faces.empty()) {
+        faces[0].x += faces[0].width/2;
+        faces[0].width /= 2;
+        faces[0].y += faces[0].height/8;
+        faces[0].height /= 2;
 
-	for( int i = 0; i < faces.size(); i++ )
-	{
-		rectangle(debugImage, faces[i], 1234);
-	}
-	//-- Show what you got
-	if (faces.size() > 0) {
-		findEyes(frame_gray, faces[0]);
-	}
+        // Atualiza o histórico de faces
+        face_history.push_back(faces[0]);
+        if (face_history.size() > NUM_FRAMES) {
+            face_history.pop_front();
+        }
+
+        // Calcula a média móvel da face detectada
+        cv::Rect avg_face = getAverageRect(face_history);
+        cv::Mat right_face_gray = frame_gray(avg_face);
+
+        // Detecta olhos na metade direita do rosto
+        std::vector<cv::Rect> eyes;
+        eye_cascade.detectMultiScale(right_face_gray, eyes,
+            1.2, 2, 0 | cv::CASCADE_SCALE_IMAGE | cv::CASCADE_FIND_BIGGEST_OBJECT,
+            cv::Size(25, 25));
+
+        // Atualiza o histórico de olhos e calcula a média móvel
+        if (!eyes.empty()) {
+
+            eyes[0].y += eyes[0].height/3;
+            eyes[0].height /= 2;
+
+
+            eye_history.push_back(eyes[0]);
+            if (eye_history.size() > NUM_FRAMES) {
+                eye_history.pop_front();
+            }
+
+            cv::Rect avg_eye = getAverageRect(eye_history);
+            cv::Mat right_eye = right_face_gray(avg_eye);
+
+            findPupil(right_eye);
+            // imshow(eye_window_name, right_eye);
+        }
+
+        imshow(main_window_name, right_face_gray);
+        
+
+	    cv::Rect area = getAverageRect(face_history);
+		area.x += area.width/5;
+		area.width /= 3;
+		area.y += area.height/2;
+		area.height /= 6;
+        cv::Mat image = frame_gray(area);
+		imshow("teste", image);
+
+
+        // Print para depuração
+        printf("FPS: %.1f - ", fps);
+        printf("face width: %d - ", avg_face.width);
+        if (!eye_history.empty()) {
+            printf("eye width: %d\n", getAverageRect(eye_history).width);
+        }
+    }
+}
+
+cv::Vec3i getAverageCircle(const std::deque<cv::Vec3i>& history) {
+    int sum_x = 0, sum_y = 0, sum_radius = 0;
+    int count = history.size();
+
+    for (const auto& circle : history) {
+        sum_x += circle[0];
+        sum_y += circle[1];
+        sum_radius += circle[2];
+    }
+
+    return cv::Vec3i(sum_x / count, sum_y / count, sum_radius / count);
+}
+
+void findPupil(cv::Mat right_eye) {
+    // right_eye é uma imagem em preto e branco contendo somente o olho direito
+
+    // Aplicar um filtro Gaussiano para suavizar a imagem
+    cv::GaussianBlur(right_eye, right_eye, cv::Size(3, 3), 2);
+    right_eye.convertTo(right_eye, -1, 2, -80);
+
+    // Usar a Transformada de Hough para detectar círculos
+    std::vector<cv::Vec3f> circles;
+    cv::HoughCircles(right_eye, circles, cv::HOUGH_GRADIENT, 1, right_eye.cols, 600, 5, 0, 12);
+
+    if (circles.size() > 0) {
+        cv::Vec3i c = circles[0];
+
+        // Atualizar o histórico de círculos
+        circle_history.push_back(c);
+        if (circle_history.size() > NUM_FRAMES) {
+            circle_history.pop_front();
+        }
+
+        // Calcular a média histórica
+        cv::Vec3i avg_circle = getAverageCircle(circle_history);
+        cv::Point center = cv::Point(avg_circle[0], avg_circle[1]);
+
+        // Desenhar o círculo central
+        cv::circle(right_eye, center, 2, cv::Scalar(255, 255, 255), 1);
+        // Desenhar a circunferência do círculo
+        cv::circle(right_eye, center, avg_circle[2], cv::Scalar(127, 127, 127), 1);
+
+        // Debug: Print the average circle parameters
+        printf("Average Circle: center=(%d, %d), radius=%d\n", center.x, center.y, avg_circle[2]);
+    }
+
+    // Exibir a imagem com a pupila detectada
+    imshow("Pupil Detection", right_eye);
 }
