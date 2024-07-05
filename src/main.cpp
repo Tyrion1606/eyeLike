@@ -2,10 +2,9 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/opencv.hpp>
-#include <opencv2/imgcodecs.hpp> // For CV_LOAD_IMAGE_COLOR
-#include <opencv2/highgui.hpp>   // For CV_WINDOW_NORMAL
+#include <opencv2/imgcodecs.hpp>
+#include <opencv2/highgui.hpp>
 #include <vector>
-
 #include <iostream>
 #include <queue>
 #include <stdio.h>
@@ -14,27 +13,23 @@
 #include <thread>
 #include <deque>
 #include <numeric>
-
 #include "constants.h"
 #include "findEyeCenter.h"
 #include "findEyeCorner.h"
-
 #include "dialer.h"
 
 using namespace cv;
 using namespace std;
 using namespace std::chrono;
 
-
 /** Constants **/
 
 /** Function Headers */
-void detectAndDisplay( cv::Mat frame );
-void findPupil( cv::Mat right_eye );
+void detectAndDisplay(cv::Mat frame);
+void findPupil(cv::Mat right_eye);
+void playAudioAlert(const std::string& file);
 
 /** Global variables */
-//-- Note, either copy these two files from opencv/data/haarscascades
-//to your current folder, or change these locations
 cv::String face_cascade_name = "../../res/haarcascade_frontalface_alt.xml";
 cv::CascadeClassifier face_cascade;
 
@@ -56,49 +51,44 @@ float eye_p[2];
 int mouse_click;
 float eyetracking_position[8];
 float eyetracking_position_right[4];
-int program_state= 0;
-float tmp_p1[2],tmp_p2[2],tmp_p[2],tmp_pr[2];
+int program_state = 0;
+float tmp_p1[2], tmp_p2[2], tmp_p[2], tmp_pr[2];
 typedef struct ThreadArgs {
-	int argc;
-	const char** argv;
+    int argc;
+    const char** argv;
 } ThreadArgs;
 
-
-
+std::string last_looking = "Center";
+int movement_count = 0;
 float fps = 0.0;
+std::vector<std::string> gaze_history;
 
 /**
  * @function main
  */
-int main( int argc, const char** argv ) {
-	int err;
-	ThreadArgs* arg_struct = (ThreadArgs* ) malloc(sizeof(ThreadArgs));
-	arg_struct->argc = argc;
-	arg_struct->argv = argv;
+int main(int argc, const char** argv) {
+    int err;
+    ThreadArgs* arg_struct = (ThreadArgs*)malloc(sizeof(ThreadArgs));
+    arg_struct->argc = argc;
+    arg_struct->argv = argv;
 
-	//  CvCapture* capture;
-	cv::Mat frame;
+    cv::Mat frame;
 
-	// Load the cascades
-	if( !face_cascade.load( face_cascade_name ) ){
-		printf("--(!)Error loading face cascade,");
-		printf("please change face_cascade_name in source code.\n");
-		return -1;
-	};
-	if( !eye_cascade.load( eye_cascade_name ) ){
-		printf("--(!)Error loading face cascade,");
-		printf("please change eye_cascade_name in source code.\n");
-		return -1;
-	};
+    // Load the cascades
+    if (!face_cascade.load(face_cascade_name)) {
+        printf("--(!)Error loading face cascade, please change face_cascade_name in source code.\n");
+        return -1;
+    }
+    if (!eye_cascade.load(eye_cascade_name)) {
+        printf("--(!)Error loading eye cascade, please change eye_cascade_name in source code.\n");
+        return -1;
+    }
 
-	cv::namedWindow(main_window_name,cv::WINDOW_NORMAL);
-	cv::moveWindow(main_window_name, 20, 80);
-	cv::resizeWindow(main_window_name, 200, 300);
+    cv::namedWindow(main_window_name, cv::WINDOW_NORMAL);
+    cv::moveWindow(main_window_name, 20, 80);
+    cv::resizeWindow(main_window_name, 200, 300);
 
-	// createCornerKernels();
-	// ellipse(skinCrCbHist, cv::Point(113, 155.6), cv::Size(23.4, 15.2),
-	// 		43.0, 0.0, 360.0, cv::Scalar(255, 255, 255), -1);
-	VideoCapture capture(0, cv::CAP_V4L2);
+    VideoCapture capture(0, cv::CAP_V4L2);
 
     // Variables to calculate FPS
     auto start = high_resolution_clock::now();
@@ -106,10 +96,10 @@ int main( int argc, const char** argv ) {
     fps = 0.0;
     float duration = 0.0;
 
-	if( capture.isOpened() ) {
+    if (capture.isOpened()) {
         capture.read(frame);
-		while( true ) {
-			capture.read(frame);
+        while (true) {
+            capture.read(frame);
 
             frame_count++;
             if (frame_count >= 30) {
@@ -119,39 +109,36 @@ int main( int argc, const char** argv ) {
                 frame_count = 0;
                 start = high_resolution_clock::now();
             }
-			cv::flip(frame, frame, 1);
+            cv::flip(frame, frame, 1);
 
-            if( !frame.empty() ) {
-				detectAndDisplay( frame );
-			}
-			int key = cv::waitKey(1);
-		}
-	}
+            if (!frame.empty()) {
+                detectAndDisplay(frame);
+            }
+            int key = cv::waitKey(1);
+        }
+    }
 
-	// releaseCornerKernels();
-	return 0;
+    return 0;
 }
 
-cv::Mat findSkin (cv::Mat &frame) {
-	cv::Mat input;
-	cv::Mat output = cv::Mat(frame.rows,frame.cols, CV_8U);
+cv::Mat findSkin(cv::Mat& frame) {
+    cv::Mat input;
+    cv::Mat output = cv::Mat(frame.rows, frame.cols, CV_8U);
 
-	cvtColor(frame, input, cv::COLOR_BGR2YCrCb);
+    cv::cvtColor(frame, input, cv::COLOR_BGR2YCrCb);
 
-	for (int y = 0; y < input.rows; ++y) {
-		const cv::Vec3b *Mr = input.ptr<cv::Vec3b>(y);
-		cv::Vec3b *Or = frame.ptr<cv::Vec3b>(y);
-		for (int x = 0; x < input.cols; ++x) {
-			cv::Vec3b ycrcb = Mr[x];
-			if(skinCrCbHist.at<uchar>(ycrcb[1], ycrcb[2]) == 0) {
-				Or[x] = cv::Vec3b(0,0,0);
-			}
-		}
-	}
-	return output;
+    for (int y = 0; y < input.rows; ++y) {
+        const cv::Vec3b* Mr = input.ptr<cv::Vec3b>(y);
+        cv::Vec3b* Or = frame.ptr<cv::Vec3b>(y);
+        for (int x = 0; x < input.cols; ++x) {
+            cv::Vec3b ycrcb = Mr[x];
+            if (skinCrCbHist.at<uchar>(ycrcb[1], ycrcb[2]) == 0) {
+                Or[x] = cv::Vec3b(0, 0, 0);
+            }
+        }
+    }
+    return output;
 }
-
-
 
 // Número de frames para a média móvel
 const int NUM_FRAMES = 5;
@@ -197,9 +184,9 @@ void detectAndDisplay(cv::Mat frame) {
         cv::Size(200, 200));
 
     if (!faces.empty()) {
-        faces[0].x += faces[0].width/2;
+        faces[0].x += faces[0].width / 2;
         faces[0].width /= 2;
-        faces[0].y += faces[0].height/8;
+        faces[0].y += faces[0].height / 8;
         faces[0].height /= 2;
 
         // Atualiza o histórico de faces
@@ -221,9 +208,8 @@ void detectAndDisplay(cv::Mat frame) {
         // Atualiza o histórico de olhos e calcula a média móvel
         if (!eyes.empty()) {
 
-            eyes[0].y += eyes[0].height/3;
+            eyes[0].y += eyes[0].height / 3;
             eyes[0].height /= 2;
-
 
             eye_history.push_back(eyes[0]);
             if (eye_history.size() > NUM_FRAMES) {
@@ -233,13 +219,10 @@ void detectAndDisplay(cv::Mat frame) {
             cv::Rect avg_eye = getAverageRect(eye_history);
             cv::Mat right_eye = right_face_gray(avg_eye);
 
-            // findPupil(right_eye);
-            // imshow(eye_window_name, right_eye);
-            cv::Point rightPupil = findEyeCenter(right_face_gray,avg_eye,"Right Eye");
-            // printf("eye-point:[%d,%d] - ", rightPupil.x, rightPupil.y);
+            cv::Point rightPupil = findEyeCenter(right_face_gray, avg_eye, "Right Eye");
 
             // Calcula e atualiza o histórico de x_axis
-            int x_axis = (rightPupil.x - 19)^3;
+            int x_axis = (rightPupil.x - (avg_eye.width/2))^3;
             x_axis_history.push_back(x_axis);
             if (x_axis_history.size() > NUM_FRAMES_X_AXIS) {
                 x_axis_history.pop_front();
@@ -250,26 +233,66 @@ void detectAndDisplay(cv::Mat frame) {
 
             // Determina a direção do olhar
             std::string looking = "Center";
-            if (avg_x_axis >= 4) {
+            if (avg_x_axis >= (avg_eye.width/8)) {
                 looking = "Right";
-            } else if (avg_x_axis <= -4) {
+            } else if (avg_x_axis <= -(avg_eye.width/8)) {
                 looking = "Left";
             }
 
-            printf("looking(%d): %s\n", avg_x_axis, looking.c_str());
+            // Track gaze direction changes
+            if (looking != last_looking && last_looking == "Center") {
+                last_looking = looking;
+                gaze_history.push_back(looking);
+
+                if (looking == "Right") {
+                    playAudioAlert("../../res/right.wav");
+                } else if (looking == "Left") {
+                    playAudioAlert("../../res/left.wav");
+                }
+
+                // Verificar sequências específicas
+                if (gaze_history.size() >= 3) {
+                    if (gaze_history[gaze_history.size() - 3] == "Left" &&
+                        gaze_history[gaze_history.size() - 2] == "Right" &&
+                        gaze_history[gaze_history.size() - 1] == "Left") {
+                        playAudioAlert("../../res/comida.wav");
+                    } else if (
+                        gaze_history[gaze_history.size() - 3] == "Right" &&
+                        gaze_history[gaze_history.size() - 2] == "Right" &&
+                        gaze_history[gaze_history.size() - 1] == "Right") {
+                        playAudioAlert("../../res/banheiro.wav");
+                    } else if (
+                        gaze_history[gaze_history.size() - 3] == "Left" &&
+                        gaze_history[gaze_history.size() - 2] == "Left" &&
+                        gaze_history[gaze_history.size() - 1] == "Right") {
+                        playAudioAlert("../../res/agua.wav");
+                    }
+
+                    printf("Gaze history: ");
+                    for (const auto& gaze : gaze_history) {
+                        printf("%s ", gaze.c_str());
+                    }
+                    printf("\n");
+                    gaze_history.clear();
+                    playAudioAlert("../../res/drum.wav");
+                }
+
+            } else if (looking != last_looking && looking == "Center") {
+                last_looking = "Center";
+            }
+
+            printf("looking(%d): %s - ", avg_x_axis, looking.c_str());
         }
 
         imshow(main_window_name, right_face_gray);
-        
 
-	    cv::Rect area = getAverageRect(face_history);
-		area.x += area.width/5;
-		area.width /= 3;
-		area.y += area.height/2;
-		area.height /= 6;
+        cv::Rect area = getAverageRect(face_history);
+        area.x += area.width / 5;
+        area.width /= 3;
+        area.y += area.height / 2;
+        area.height /= 6;
         cv::Mat image = frame_gray(area);
-		imshow("teste", image);
-
+        imshow("teste", image);
 
         // Print para depuração
         printf("FPS: %.1f - ", fps);
@@ -328,4 +351,10 @@ void findPupil(cv::Mat right_eye) {
 
     // Exibir a imagem com a pupila detectada
     imshow("Pupil Detection", right_eye);
+}
+
+void playAudioAlert(const std::string& file) {
+    std::cout << "Audio Alert!" << std::endl;
+    std::string command = "aplay " + file;
+    system(command.c_str());
 }
