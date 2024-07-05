@@ -71,27 +71,6 @@ float fps = 0.0;
  * @function main
  */
 int main( int argc, const char** argv ) {
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 	int err;
 	ThreadArgs* arg_struct = (ThreadArgs* ) malloc(sizeof(ThreadArgs));
 	arg_struct->argc = argc;
@@ -116,18 +95,9 @@ int main( int argc, const char** argv ) {
 	cv::moveWindow(main_window_name, 20, 80);
 	cv::resizeWindow(main_window_name, 200, 300);
 
-	// cv::namedWindow(face_window_name,cv::WINDOW_NORMAL);
-	// cv::moveWindow(face_window_name, 200, 0);
-	// cv::resizeWindow(face_window_name, 400, 300);
-
-	// cv::namedWindow(eye_window_name,cv::WINDOW_NORMAL);
-	// cv::moveWindow(eye_window_name, 0, 400);
-	// cv::resizeWindow(eye_window_name, 400, 300);
-
-
-	createCornerKernels();
-	ellipse(skinCrCbHist, cv::Point(113, 155.6), cv::Size(23.4, 15.2),
-			43.0, 0.0, 360.0, cv::Scalar(255, 255, 255), -1);
+	// createCornerKernels();
+	// ellipse(skinCrCbHist, cv::Point(113, 155.6), cv::Size(23.4, 15.2),
+	// 		43.0, 0.0, 360.0, cv::Scalar(255, 255, 255), -1);
 	VideoCapture capture(0, cv::CAP_V4L2);
 
     // Variables to calculate FPS
@@ -158,138 +128,9 @@ int main( int argc, const char** argv ) {
 		}
 	}
 
-	releaseCornerKernels();
-
+	// releaseCornerKernels();
 	return 0;
 }
-
-void findEyes(cv::Mat frame_gray, cv::Rect face) {
-	cv::Mat faceROI = frame_gray(face);
-	cv::Mat debugFace = faceROI;
-
-	if (kSmoothFaceImage) {
-		double sigma = kSmoothFaceFactor * face.width;
-		GaussianBlur( faceROI, faceROI, cv::Size( 0, 0 ), sigma);
-	}
-	//-- Find eye regions and draw them
-	int eye_region_width = face.width * (kEyePercentWidth/100.0);
-	int eye_region_height = face.width * (kEyePercentHeight/100.0);
-	int eye_region_top = face.height * (kEyePercentTop/100.0);
-	cv::Rect leftEyeRegion(face.width*(kEyePercentSide/100.0),
-			eye_region_top,eye_region_width,eye_region_height);
-	cv::Rect rightEyeRegion(face.width - eye_region_width - face.width*(kEyePercentSide/100.0),
-			eye_region_top,eye_region_width,eye_region_height);
-
-	//-- Find Eye Centers
-	cv::Point leftPupil = findEyeCenter(faceROI,leftEyeRegion,"Left Eye");
-	cv::Point rightPupil = findEyeCenter(faceROI,rightEyeRegion,"Right Eye");
-	// get corner regions
-	cv::Rect leftRightCornerRegion(leftEyeRegion);
-	leftRightCornerRegion.width -= leftPupil.x;
-	leftRightCornerRegion.x += leftPupil.x;
-	leftRightCornerRegion.height /= 2;
-	leftRightCornerRegion.y += leftRightCornerRegion.height / 2;
-	cv::Rect leftLeftCornerRegion(leftEyeRegion);
-	leftLeftCornerRegion.width = leftPupil.x;
-	leftLeftCornerRegion.height /= 2;
-	leftLeftCornerRegion.y += leftLeftCornerRegion.height / 2;
-	cv::Rect rightLeftCornerRegion(rightEyeRegion);
-	rightLeftCornerRegion.width = rightPupil.x;
-	rightLeftCornerRegion.height /= 2;
-	rightLeftCornerRegion.y += rightLeftCornerRegion.height / 2;
-	cv::Rect rightRightCornerRegion(rightEyeRegion);
-	rightRightCornerRegion.width -= rightPupil.x;
-	rightRightCornerRegion.x += rightPupil.x;
-	rightRightCornerRegion.height /= 2;
-	rightRightCornerRegion.y += rightRightCornerRegion.height / 2;
-	/*  rectangle(debugFace,leftRightCornerRegion,200);
-		rectangle(debugFace,leftLeftCornerRegion,200);
-		rectangle(debugFace,rightLeftCornerRegion,200);
-		rectangle(debugFace,rightRightCornerRegion,200);
-		*///Compute the relative position
-	pupil_position_stack[0][pupil_stack_count] = leftPupil.x;
-	pupil_position_stack[2][pupil_stack_count] = rightPupil.x;
-	//filter out the out of range data
-	if( (float) leftPupil.y/leftEyeRegion.height >= 0.23 ||
-			(float) leftPupil.y/leftEyeRegion.height <= 0.90	)
-		pupil_position_stack[1][pupil_stack_count] = leftPupil.y;
-	if( (float) rightPupil.y/rightEyeRegion.height >= 0.23 ||
-			(float) rightPupil.y/rightEyeRegion.height <= 0.90)
-		pupil_position_stack[3][pupil_stack_count] = rightPupil.y;
-
-	if(pupil_stack_count >= 4){
-		pupil_stack_count = 0;
-	}
-	else {
-		pupil_stack_count += 1;
-	}
-	int loop_count;
-	for(loop_count = 0; loop_count<= 3; loop_count++){
-		pupil_smooth_position[loop_count] = 0;
-	}
-	for(loop_count = 0; loop_count<= 4; loop_count++){
-		pupil_smooth_position[0] += pupil_position_stack[0][loop_count];
-		pupil_smooth_position[1] += pupil_position_stack[1][loop_count];
-		pupil_smooth_position[2] += pupil_position_stack[2][loop_count];
-		pupil_smooth_position[3] += pupil_position_stack[3][loop_count];
-	}
-	//printf("\e[1A");
-	//printf("\e[K");
-
-	float pupil_left_x  = (float) pupil_smooth_position[0]/(leftEyeRegion.width   * 5);
-	float pupil_left_y  = (float) pupil_smooth_position[1]/(leftEyeRegion.height  * 5);
-	float pupil_right_x = (float) pupil_smooth_position[2]/(rightEyeRegion.width  * 5);
-	float pupil_right_y = (float) pupil_smooth_position[3]/(rightEyeRegion.height * 5);
-	//printf("Left pupil: (%.4f,%.4f), Right pupil: (%.4f,%.4f)\n",
-	//		pupil_left_x, pupil_left_y, pupil_right_x, pupil_right_y);
-	dialer.updatePupilPosition(pupil_left_x, pupil_left_y,
-			pupil_right_x, pupil_right_y);
-
-	leftPupil.x  = (int) pupil_smooth_position[0]/5;
-	leftPupil.y  = (int) pupil_smooth_position[1]/5;
-	rightPupil.x = (int) pupil_smooth_position[2]/5;
-	rightPupil.y = (int) pupil_smooth_position[3]/5;
-	// program for eyegazing
-
-	//pass_value(eye_p, &mouse_click);
-
-	// change eye centers to face coordinates
-	rightPupil.x += rightEyeRegion.x;
-	rightPupil.y += rightEyeRegion.y;
-	leftPupil.x += leftEyeRegion.x;
-	leftPupil.y += leftEyeRegion.y;
-	// draw eye centers
-	circle(debugFace, rightPupil, 3, 1234);
-	circle(debugFace, leftPupil, 3, 1234);
-
-	//-- Find Eye Corners
-	if (kEnableEyeCorner) {
-		cv::Point2f leftRightCorner =
-			findEyeCorner(faceROI(leftRightCornerRegion), true, false);
-		leftRightCorner.x += leftRightCornerRegion.x;
-		leftRightCorner.y += leftRightCornerRegion.y;
-		cv::Point2f leftLeftCorner =
-			findEyeCorner(faceROI(leftLeftCornerRegion), true, true);
-		leftLeftCorner.x += leftLeftCornerRegion.x;
-		leftLeftCorner.y += leftLeftCornerRegion.y;
-		cv::Point2f rightLeftCorner =
-			findEyeCorner(faceROI(rightLeftCornerRegion), false, true);
-		rightLeftCorner.x += rightLeftCornerRegion.x;
-		rightLeftCorner.y += rightLeftCornerRegion.y;
-		cv::Point2f rightRightCorner =
-			findEyeCorner(faceROI(rightRightCornerRegion), false, false);
-		rightRightCorner.x += rightRightCornerRegion.x;
-		rightRightCorner.y += rightRightCornerRegion.y;
-		circle(faceROI, leftRightCorner, 3, 200);
-		circle(faceROI, leftLeftCorner, 3, 200);
-		circle(faceROI, rightLeftCorner, 3, 200);
-		circle(faceROI, rightRightCorner, 3, 200);
-	}
-
-	imshow(main_window_name, faceROI);
-	// imshow(face_window_name, faceROI);
-}
-
 
 cv::Mat findSkin (cv::Mat &frame) {
 	cv::Mat input;
@@ -314,12 +155,13 @@ cv::Mat findSkin (cv::Mat &frame) {
 
 // Número de frames para a média móvel
 const int NUM_FRAMES = 5;
+const int NUM_FRAMES_X_AXIS = 5;  // Número de frames para calcular a média de x_axis
 
 // Históricos de detecções
 std::deque<cv::Rect> face_history;
 std::deque<cv::Rect> eye_history;
 std::deque<cv::Vec3i> circle_history;  // Histórico de círculos detectados
-
+std::deque<int> x_axis_history;
 
 cv::Rect getAverageRect(const std::deque<cv::Rect>& rects) {
     int x = 0, y = 0, width = 0, height = 0;
@@ -331,6 +173,12 @@ cv::Rect getAverageRect(const std::deque<cv::Rect>& rects) {
     }
     int n = rects.size();
     return cv::Rect(x / n, y / n, width / n, height / n);
+}
+
+int getAverageXAxis(const std::deque<int>& x_axis_values) {
+    if (x_axis_values.empty()) return 0;
+    int sum = std::accumulate(x_axis_values.begin(), x_axis_values.end(), 0);
+    return sum / static_cast<int>(x_axis_values.size());
 }
 
 /**
@@ -385,8 +233,30 @@ void detectAndDisplay(cv::Mat frame) {
             cv::Rect avg_eye = getAverageRect(eye_history);
             cv::Mat right_eye = right_face_gray(avg_eye);
 
-            findPupil(right_eye);
+            // findPupil(right_eye);
             // imshow(eye_window_name, right_eye);
+            cv::Point rightPupil = findEyeCenter(right_face_gray,avg_eye,"Right Eye");
+            // printf("eye-point:[%d,%d] - ", rightPupil.x, rightPupil.y);
+
+            // Calcula e atualiza o histórico de x_axis
+            int x_axis = (rightPupil.x - 19)^3;
+            x_axis_history.push_back(x_axis);
+            if (x_axis_history.size() > NUM_FRAMES_X_AXIS) {
+                x_axis_history.pop_front();
+            }
+
+            // Calcula a média móvel de x_axis
+            int avg_x_axis = getAverageXAxis(x_axis_history);
+
+            // Determina a direção do olhar
+            std::string looking = "Center";
+            if (avg_x_axis >= 4) {
+                looking = "Right";
+            } else if (avg_x_axis <= -4) {
+                looking = "Left";
+            }
+
+            printf("looking(%d): %s\n", avg_x_axis, looking.c_str());
         }
 
         imshow(main_window_name, right_face_gray);
